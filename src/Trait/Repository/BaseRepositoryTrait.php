@@ -7,9 +7,10 @@ namespace Letkode\OrmToolkitBundle\Trait\Repository;
 use Doctrine\ORM\Query\Expr\Composite;
 use Doctrine\ORM\QueryBuilder;
 use Letkode\CommonBundle\Exception\EntityNotFoundException;
+use Letkode\QueryFilterBundle\Filter\FilterCastType;
 use Letkode\QueryFilterBundle\Filter\FilterCriteria;
 use Letkode\QueryFilterBundle\Filter\FilterInput;
-use Letkode\QueryFilterBundle\Request\QueryFilterRequest;
+use Letkode\QueryFilterBundle\Request\FilterQueryRequest;
 use Letkode\QueryFilterBundle\Result\PaginatedResult;
 use Symfony\Component\Uid\Uuid;
 
@@ -43,7 +44,7 @@ trait BaseRepositoryTrait
      */
     public function paginate(
         QueryBuilder $qb,
-        QueryFilterRequest $query,
+        FilterQueryRequest $query,
         array $sortable = [],
         array $searchable = [],
         int $minSearchLength = 3,
@@ -199,12 +200,12 @@ trait BaseRepositoryTrait
                 return $path . ' != :' . $param;
 
             case 'empty':
-                return 'text' === $field->type
+                return FilterCastType::Text === $field->type
                     ? $qb->expr()->orX($path . ' IS NULL', $path . " = ''")
                     : $path . ' IS NULL';
 
             case 'not_empty':
-                return 'text' === $field->type
+                return FilterCastType::Text === $field->type
                     ? $qb->expr()->andX($path . ' IS NOT NULL', $path . " != ''")
                     : $path . ' IS NOT NULL';
 

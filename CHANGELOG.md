@@ -11,6 +11,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.2.0] - 2026-07-29
+
+### Changed
+- `BaseRepositoryTrait::paginate()` now type-hints `Letkode\QueryFilterBundle\Request\FilterQueryRequest` (renamed from `QueryFilterRequest` in `letkode/query-filter-bundle` `1.2.0`)
+- `BaseRepositoryTrait::buildFilterExpression()` now compares `$field->type` against `Letkode\QueryFilterBundle\Filter\FilterCastType::Text` instead of the string `'text'` (`FilterInput::$type` is now a `FilterCastType` enum in `letkode/query-filter-bundle` `1.2.0`)
+
+### Requires
+- `letkode/query-filter-bundle` `^1.2`
+
+---
+
 ## [1.1.0] - 2026-07-29
 
 ### Changed

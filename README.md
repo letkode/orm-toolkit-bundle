@@ -71,14 +71,14 @@ Adds `objectClass` and `objectId` columns to track which object a record belongs
 Query/filter/pagination params are provided by [`letkode/query-filter-bundle`](https://github.com/letkode/query-filter-bundle).
 
 ```php
-use Letkode\QueryFilterBundle\Request\QueryFilterRequest;
+use Letkode\QueryFilterBundle\Request\FilterQueryRequest;
 
 $repo->save($entity);
 $repo->remove($entity);
 $repo->findByUuid($uuid);           // returns T|null
 $repo->findOrFailByUuid($uuid);     // throws EntityNotFoundException
 $repo->paginate($qb, $query, sortable: ['name'], searchable: ['name', 'email']);
-// $query is a Letkode\QueryFilterBundle\Request\QueryFilterRequest
+// $query is a Letkode\QueryFilterBundle\Request\FilterQueryRequest
 ```
 
 ### `TranslatableRepositoryTrait`
