@@ -9,7 +9,7 @@ use Doctrine\ORM\QueryBuilder;
 use Letkode\CommonBundle\Exception\EntityNotFoundException;
 use Letkode\QueryFilterBundle\Filter\FilterCriteria;
 use Letkode\QueryFilterBundle\Filter\FilterInput;
-use Letkode\QueryFilterBundle\Request\QueryRequest;
+use Letkode\QueryFilterBundle\Request\QueryFilterRequest;
 use Letkode\QueryFilterBundle\Result\PaginatedResult;
 use Symfony\Component\Uid\Uuid;
 
@@ -43,7 +43,7 @@ trait BaseRepositoryTrait
      */
     public function paginate(
         QueryBuilder $qb,
-        QueryRequest $query,
+        QueryFilterRequest $query,
         array $sortable = [],
         array $searchable = [],
         int $minSearchLength = 3,
