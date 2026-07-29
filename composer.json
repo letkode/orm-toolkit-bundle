@@ -1,0 +1,39 @@
+{
+    "name": "letkode/orm-toolkit-bundle",
+    "description": "Doctrine entity traits, value objects and DQL utilities for Symfony applications",
+    "type": "symfony-bundle",
+    "license": "MIT",
+    "require": {
+        "php": "^8.4",
+        "doctrine/doctrine-bundle": "^3.0",
+        "doctrine/orm": "^3.0",
+        "gedmo/doctrine-extensions": "^3.0",
+        "letkode/common-bundle": "^1.0",
+        "letkode/query-filter-bundle": "^1.0",
+        "symfony/serializer": "^7.0 || ^8.0",
+        "symfony/uid": "^7.0 || ^8.0",
+        "symfony/validator": "^7.0 || ^8.0"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^11",
+        "phpstan/phpstan": "^2",
+        "friendsofphp/php-cs-fixer": "^3.95"
+    },
+    "autoload": {
+        "psr-4": {
+            "Letkode\\OrmToolkitBundle\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Letkode\\OrmToolkitBundle\\Tests\\": "tests/"
+        }
+    },
+    "extra": {
+        "symfony": {
+            "bundles": {
+                "Letkode\\OrmToolkitBundle\\LetkodeOrmToolkitBundle": ["all"]
+            }
+        }
+    }
+}

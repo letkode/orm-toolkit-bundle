@@ -1,0 +1,13 @@
+services:
+    _defaults:
+        autowire: true
+        autoconfigure: true
+
+    Letkode\OrmToolkitBundle\:
+        resource: '../src/'
+        exclude:
+            - '../src/LetkodeOrmToolkitBundle.php'
+            - '../src/Trait/'
+            - '../src/ValueObject/'
+            - '../src/Attribute/'
+            - '../src/Doctrine/DQL/'

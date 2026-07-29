@@ -1,0 +1,16 @@
+services:
+    php:
+        container_name: lka-package-orm-toolkit-php
+        image: ghcr.io/letkode/lka-php-cli:8.4
+        build:
+            context: ./docker/
+        environment:
+            XDEBUG_CLIENT_HOST: host.docker.internal
+            XDEBUG_CLIENT_PORT: 9003
+            PHP_IDE_CONFIG: serverName=Docker
+        command: sleep infinity
+        volumes:
+            - ./:/app/www
+            - ../query-filter-bundle:/app/query-filter-bundle
+            - ./docker/php/xdebug.ini:/usr/local/etc/php/conf.d/xdebug.ini
+            - ./docker/php/php.ini:/usr/local/etc/php/php.ini
