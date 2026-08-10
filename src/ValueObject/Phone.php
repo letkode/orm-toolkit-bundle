@@ -13,7 +13,7 @@ final readonly class Phone
     /** @throws ValueObjectException */
     public function __construct(string $value)
     {
-        $normalized = preg_replace('/[\s\-().]+/', '', $value);
+        $normalized = preg_replace('/[\s\-().]+/', '', $value) ?? '';
 
         if (!preg_match('/^\+?[1-9]\d{6,14}$/', $normalized)) {
             throw new ValueObjectException(\sprintf('Invalid phone number: "%s". Expected E.164-compatible format.', $value), translationKey: 'value_object.phone.invalid', translationParams: ['{{ value }}' => $value]);

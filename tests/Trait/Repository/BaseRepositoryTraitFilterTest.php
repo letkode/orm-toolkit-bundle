@@ -16,8 +16,13 @@ use PHPUnit\Framework\TestCase;
  */
 final class FilterTestRepository
 {
+    /** @use BaseRepositoryTrait<object> */
     use BaseRepositoryTrait;
 
+    /**
+     * @param list<FilterCriteria>       $filters
+     * @param array<string, FilterInput> $filterable
+     */
     public function applyFiltersPublic(QueryBuilder $qb, string $alias, array $filters, array $filterable): void
     {
         $this->applyFilters($qb, $alias, $filters, $filterable);
@@ -40,8 +45,8 @@ final class BaseRepositoryTraitFilterTest extends TestCase
     /**
      * Returns a QB mock that captures setParameter() and andWhere() calls.
      *
-     * @param array<string, mixed> $params  Populated on setParameter() calls
-     * @param list<string>         $wheres  Populated on andWhere() calls (cast to string)
+     * @param array<string, mixed> $params Populated on setParameter() calls
+     * @param list<string>         $wheres Populated on andWhere() calls (cast to string)
      */
     private function createQbMock(array &$params, array &$wheres): QueryBuilder
     {
@@ -58,7 +63,7 @@ final class BaseRepositoryTraitFilterTest extends TestCase
             });
 
         $qb->method('andWhere')
-            ->willReturnCallback(static function (mixed $expr) use ($qb, &$wheres): QueryBuilder {
+            ->willReturnCallback(static function (string|\Stringable $expr) use ($qb, &$wheres): QueryBuilder {
                 $wheres[] = (string) $expr;
 
                 return $qb;

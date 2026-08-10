@@ -11,6 +11,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.2.1] - 2026-08-10
+
+### Fixed
+- `phpstan.neon` added (was required as a dev dependency but never configured); package is now phpstan level 9 clean
+- `BaseRepositoryTrait::buildFilterExpression()` return type narrowed from `Doctrine\ORM\Query\Expr\Composite` to `Andx|Orx|string|null`, matching what it actually returns
+- `BaseRepositoryTrait::paginate()` no longer accepts an untyped result from Doctrine's `getResult()` without narrowing
+- `TranslateFieldValue` AST properties typed as `Doctrine\ORM\Query\AST\Node|string` instead of `mixed`
+- `UuidGeneratorSubscriber::prePersist()` and `LetkodeOrmToolkitBundle::loadExtension()` missing parameter types documented
+- `ValueObject\Phone` and `ValueObject\Slug` normalization no longer relies on `preg_replace()`'s nullable return going unchecked
+
+No behavior changes; all fixes are type-safety only. 72 tests unchanged and passing.
+
+---
+
 ## [1.2.0] - 2026-07-29
 
 ### Changed

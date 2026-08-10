@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace Letkode\OrmToolkitBundle\Trait\Repository;
 
-use Doctrine\ORM\Query\Expr\Composite;
+use Doctrine\ORM\EntityManagerInterface;
+use Doctrine\ORM\Query\Expr\Andx;
+use Doctrine\ORM\Query\Expr\Orx;
 use Doctrine\ORM\QueryBuilder;
 use Letkode\CommonBundle\Exception\EntityNotFoundException;
 use Letkode\QueryFilterBundle\Filter\FilterCastType;
@@ -14,7 +16,12 @@ use Letkode\QueryFilterBundle\Request\FilterQueryRequest;
 use Letkode\QueryFilterBundle\Result\PaginatedResult;
 use Symfony\Component\Uid\Uuid;
 
-/** @template T of object */
+/**
+ * @template T of object
+ *
+ * @method EntityManagerInterface getEntityManager()
+ * @method T|null                 findOneBy(array<string, mixed> $criteria, array<string, string>|null $orderBy = null)
+ */
 trait BaseRepositoryTrait
 {
     /** @param T $entity */
@@ -38,9 +45,9 @@ trait BaseRepositoryTrait
     }
 
     /**
-     * @param string[]                    $sortable   Allowed field names for sorting
-     * @param string[]                    $searchable Fields to apply ILIKE search on
-     * @param array<string, FilterInput>  $filterable Allowed filter fields and their definitions
+     * @param string[]                   $sortable   Allowed field names for sorting
+     * @param string[]                   $searchable Fields to apply ILIKE search on
+     * @param array<string, FilterInput> $filterable Allowed filter fields and their definitions
      */
     public function paginate(
         QueryBuilder $qb,
@@ -62,6 +69,7 @@ trait BaseRepositoryTrait
             ->getQuery()
             ->getSingleScalarResult();
 
+        /** @var list<T> $data */
         $data = $qb
             ->setFirstResult(($query->page - 1) * $query->perPage)
             ->setMaxResults($query->perPage)
@@ -71,6 +79,9 @@ trait BaseRepositoryTrait
         return new PaginatedResult($data, $total, $query->page, $query->perPage);
     }
 
+    /**
+     * @param string[] $searchable
+     */
     private function applySearch(QueryBuilder $qb, string $alias, string|null $q, array $searchable, int $minSearchLength): void
     {
         if (null === $q || mb_strlen($q) < $minSearchLength || [] === $searchable) {
@@ -86,6 +97,9 @@ trait BaseRepositoryTrait
             ->setParameter('q', '%' . $q . '%');
     }
 
+    /**
+     * @param string[] $sortable
+     */
     private function applySort(QueryBuilder $qb, string $alias, string|null $sort, string $dir, array $sortable): void
     {
         if (null === $sort || !\in_array($sort, $sortable, true)) {
@@ -162,7 +176,7 @@ trait BaseRepositoryTrait
         }
     }
 
-    private function buildFilterExpression(QueryBuilder $qb, FilterCriteria $criteria, FilterInput $field, string $path, int $idx): string|Composite|null
+    private function buildFilterExpression(QueryBuilder $qb, FilterCriteria $criteria, FilterInput $field, string $path, int $idx): string|Andx|Orx|null
     {
         $op = $criteria->operator;
         $values = $criteria->values;

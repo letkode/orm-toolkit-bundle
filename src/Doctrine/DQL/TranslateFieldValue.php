@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Letkode\OrmToolkitBundle\Doctrine\DQL;
 
 use Doctrine\ORM\Query\AST\Functions\FunctionNode;
+use Doctrine\ORM\Query\AST\Node;
 use Doctrine\ORM\Query\Parser;
 use Doctrine\ORM\Query\SqlWalker;
 use Doctrine\ORM\Query\TokenType;
@@ -18,9 +19,9 @@ use Doctrine\ORM\Query\TokenType;
  */
 final class TranslateFieldValue extends FunctionNode
 {
-    private mixed $column;
-    private mixed $field;
-    private mixed $locale;
+    private Node|string $column;
+    private Node $field;
+    private Node|string $locale;
 
     public function parse(Parser $parser): void
     {

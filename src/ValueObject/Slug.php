@@ -14,9 +14,9 @@ final readonly class Slug
     public function __construct(string $value)
     {
         $normalized = strtolower(trim($value));
-        $normalized = preg_replace('/[\s_]+/', '-', $normalized);
-        $normalized = preg_replace('/[^a-z0-9\-]/', '', $normalized);
-        $normalized = preg_replace('/-{2,}/', '-', $normalized);
+        $normalized = preg_replace('/[\s_]+/', '-', $normalized) ?? '';
+        $normalized = preg_replace('/[^a-z0-9\-]/', '', $normalized) ?? '';
+        $normalized = preg_replace('/-{2,}/', '-', $normalized) ?? '';
         $normalized = trim($normalized, '-');
 
         if (!preg_match('/^[a-z0-9][a-z0-9\-]{0,253}[a-z0-9]$|^[a-z0-9]$/', $normalized)) {

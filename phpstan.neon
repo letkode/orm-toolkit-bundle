@@ -1,0 +1,10 @@
+parameters:
+    level: 9
+    paths:
+        - src
+        - tests
+    treatPhpDocTypesAsCertain: false
+    ignoreErrors:
+        -
+            message: '#^Trait .+ is used zero times and is not analysed\.$#'
+            reportUnmatched: false

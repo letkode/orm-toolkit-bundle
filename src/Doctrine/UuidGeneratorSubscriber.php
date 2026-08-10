@@ -7,6 +7,7 @@ namespace Letkode\OrmToolkitBundle\Doctrine;
 use Doctrine\Bundle\DoctrineBundle\Attribute\AsDoctrineListener;
 use Doctrine\ORM\Events;
 use Doctrine\Persistence\Event\LifecycleEventArgs;
+use Doctrine\Persistence\ObjectManager;
 use Symfony\Component\Uid\Uuid;
 
 /**
@@ -21,6 +22,9 @@ use Symfony\Component\Uid\Uuid;
 #[AsDoctrineListener(event: Events::prePersist)]
 final readonly class UuidGeneratorSubscriber
 {
+    /**
+     * @param LifecycleEventArgs<ObjectManager> $args
+     */
     public function prePersist(LifecycleEventArgs $args): void
     {
         $entity = $args->getObject();
