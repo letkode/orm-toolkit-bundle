@@ -11,6 +11,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.2.2] - 2026-08-10
+
+### Fixed
+- `BaseRepositoryTrait::paginate()` return type documented as `PaginatedResult<T>` — `letkode/query-filter-bundle` `1.2.1` made `PaginatedResult` generic, which surfaced a new phpstan finding here. Backward compatible; no runtime change.
+- Verified against `letkode/common-bundle` `1.4.2`, `letkode/helpers-bundle` `1.0.2` and `letkode/query-filter-bundle` `1.2.1` — 72 tests and phpstan level 9 pass unchanged.
+
+---
+
 ## [1.2.1] - 2026-08-10
 
 ### Fixed

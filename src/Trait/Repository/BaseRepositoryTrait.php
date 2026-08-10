@@ -48,6 +48,8 @@ trait BaseRepositoryTrait
      * @param string[]                   $sortable   Allowed field names for sorting
      * @param string[]                   $searchable Fields to apply ILIKE search on
      * @param array<string, FilterInput> $filterable Allowed filter fields and their definitions
+     *
+     * @return PaginatedResult<T>
      */
     public function paginate(
         QueryBuilder $qb,
