@@ -11,6 +11,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.4.0] - 2026-08-18
+
+### Added
+- `BaseRepositoryTrait::paginate()` — `sortable` and `searchable` now accept a qualified alias path (e.g. `'p.lastName'`), matching the join-aware behavior `filterable` already had via `FilterInput::path`. A bare field name still resolves against the root alias; fully backward compatible.
+
+---
+
 ## [1.3.0] - 2026-08-18
 
 ### Changed

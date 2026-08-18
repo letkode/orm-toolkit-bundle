@@ -81,6 +81,26 @@ $repo->paginate($qb, $query, sortable: ['name'], searchable: ['name', 'email']);
 // $query is a Letkode\QueryFilterBundle\Request\FilterQueryRequest
 ```
 
+`sortable` and `searchable` entries may be a qualified alias path (`'p.lastName'`) instead of a bare
+field name, to sort/search on a joined entity:
+
+```php
+$qb = $this->createQueryBuilder('c')->join('c.person', 'p');
+
+$repo->paginate(
+    $qb,
+    $query,
+    sortable:   ['createdAt', 'p.lastName'],
+    searchable: ['p.firstName', 'p.lastName', 'p.email'],
+);
+```
+
+A bare field name (no dot) still resolves against the root alias, exactly as before. The referenced
+alias must already be joined on the `QueryBuilder` passed to `paginate()` — the bundle does not
+validate or infer joins, same responsibility as `FilterInput::path`. Ordering on a path behind a
+to-many join can duplicate rows in the paginated result (the usual Doctrine to-many fan-out); prefer
+sorting/searching on a to-one relation, or on a column of the root entity, when possible.
+
 ### `TranslatableRepositoryTrait`
 
 ```php

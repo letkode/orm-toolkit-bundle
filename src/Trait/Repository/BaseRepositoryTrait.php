@@ -91,7 +91,7 @@ trait BaseRepositoryTrait
         }
 
         $conditions = array_map(
-            static fn (string $field) => 'ILIKE(' . $alias . '.' . $field . ', :q) = TRUE',
+            fn (string $field) => 'ILIKE(' . $this->resolvePath($alias, $field) . ', :q) = TRUE',
             $searchable,
         );
 
@@ -109,7 +109,20 @@ trait BaseRepositoryTrait
         }
 
         $qb->resetDQLPart('orderBy')
-            ->orderBy($alias . '.' . $sort, strtoupper($dir));
+            ->orderBy($this->resolvePath($alias, $sort), strtoupper($dir));
+    }
+
+    /**
+     * Resolves a sortable/searchable allowlist entry to a Doctrine property path.
+     *
+     * A field containing a dot is already a qualified path (e.g. `p.lastName`, mirroring
+     * `FilterInput::path`) and is used as-is; the caller is responsible for the referenced
+     * alias being joined on the given QueryBuilder. A bare field name resolves against the
+     * root alias, same as before.
+     */
+    private function resolvePath(string $alias, string $field): string
+    {
+        return str_contains($field, '.') ? $field : $alias . '.' . $field;
     }
 
     /**
