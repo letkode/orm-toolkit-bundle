@@ -13,7 +13,7 @@ use Letkode\QueryFilterBundle\Filter\FilterCastType;
 use Letkode\QueryFilterBundle\Filter\FilterCriteria;
 use Letkode\QueryFilterBundle\Filter\FilterInput;
 use Letkode\QueryFilterBundle\Request\FilterQueryRequest;
-use Letkode\QueryFilterBundle\Result\PaginatedResult;
+use Letkode\QueryFilterBundle\Result\PaginatedResultRepository;
 use Symfony\Component\Uid\Uuid;
 
 /**
@@ -49,7 +49,7 @@ trait BaseRepositoryTrait
      * @param string[]                   $searchable Fields to apply ILIKE search on
      * @param array<string, FilterInput> $filterable Allowed filter fields and their definitions
      *
-     * @return PaginatedResult<T>
+     * @return PaginatedResultRepository<T>
      */
     public function paginate(
         QueryBuilder $qb,
@@ -58,7 +58,7 @@ trait BaseRepositoryTrait
         array $searchable = [],
         int $minSearchLength = 3,
         array $filterable = [],
-    ): PaginatedResult {
+    ): PaginatedResultRepository {
         $alias = $qb->getRootAliases()[0];
 
         $this->applySearch($qb, $alias, $query->q, $searchable, $minSearchLength);
@@ -78,7 +78,7 @@ trait BaseRepositoryTrait
             ->getQuery()
             ->getResult();
 
-        return new PaginatedResult($data, $total, $query->page, $query->perPage);
+        return new PaginatedResultRepository($data, $total, $query->page, $query->perPage);
     }
 
     /**

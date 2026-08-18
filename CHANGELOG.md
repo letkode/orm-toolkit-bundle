@@ -11,6 +11,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.3.0] - 2026-08-18
+
+### Changed
+- `BaseRepositoryTrait::paginate()` now returns `Letkode\QueryFilterBundle\Result\PaginatedResultRepository` — follows the rename in `letkode/query-filter-bundle` `1.3.0` (was `Result\PaginatedResult`)
+- `letkode/query-filter-bundle` requirement bumped to `^1.3.0`
+
+### BC breaks
+- Code type-hinting against `Letkode\QueryFilterBundle\Result\PaginatedResult` (return of `paginate()`) must be updated to `PaginatedResultRepository`
+
+---
+
 ## [1.2.2] - 2026-08-10
 
 ### Fixed
