@@ -7,7 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [Unreleased]
+## [1.5.0] - 2026-09-03
+
+### Added
+- `BaseRepositoryTrait::paginate()` gains a `bool $strict = true` parameter (last argument). When `strict`, the query is validated against the declared `sortable` / `filterable` allowlists before any database access, and every rejection is collected and thrown at once.
+- `BaseRepositoryTrait::buildFilterExpression()` — `less_than_equal` (`<=`) and `greater_than_equal` (`>=`) operators; `less_than` / `greater_than` are the canonical names for `<` / `>`, with `lt`/`lte`/`gt`/`gte` short aliases and the legacy `before`/`after` still accepted.
+
+### Changed
+- `BaseRepositoryTrait::buildFilterExpression()` reworked from a `switch` into a side-effect `match` (parameter binding) plus a return `match` (DQL expression).
+- Private `applySort()` / `applyFilters()` now return `list<Letkode\QueryFilterBundle\Exception\QueryParameterRejection>` instead of `void`.
+- Requires `letkode/query-filter-bundle: ^1.4`.
+
+### Behavior change
+- `paginate()` defaults to `strict: true`: an undeclared sort/filter field, an unknown filter operator or a malformed filter entry now throws `Letkode\QueryFilterBundle\Exception\UndeclaredQueryParameterException` (HTTP-agnostic, carries every rejection) instead of being silently ignored. The method signature stays backward compatible; only runtime behavior changes. Pass `strict: false` to keep the previous lenient behavior.
+- Before upgrading, audit each `paginate()` call so its `sortable` / `filterable` allowlists cover every parameter the corresponding endpoint accepts.
 
 ---
 

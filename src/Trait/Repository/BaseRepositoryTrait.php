@@ -9,6 +9,9 @@ use Doctrine\ORM\Query\Expr\Andx;
 use Doctrine\ORM\Query\Expr\Orx;
 use Doctrine\ORM\QueryBuilder;
 use Letkode\CommonBundle\Exception\EntityNotFoundException;
+use Letkode\QueryFilterBundle\Exception\QueryParameterRejection;
+use Letkode\QueryFilterBundle\Exception\RejectionReason;
+use Letkode\QueryFilterBundle\Exception\UndeclaredQueryParameterException;
 use Letkode\QueryFilterBundle\Filter\FilterCastType;
 use Letkode\QueryFilterBundle\Filter\FilterCriteria;
 use Letkode\QueryFilterBundle\Filter\FilterInput;
@@ -24,6 +27,21 @@ use Symfony\Component\Uid\Uuid;
  */
 trait BaseRepositoryTrait
 {
+    /**
+     * Filter operators understood by buildFilterExpression(). Kept in sync with
+     * its match() arms; the FilterOperatorCoverageTest guards against drift.
+     */
+    private const array FILTER_OPERATORS = [
+        'contains', 'not_contains', 'starts_with', 'ends_with',
+        'is', 'is_not', 'empty', 'not_empty',
+        'between', 'not_between',
+        'less_than', 'lt', 'before',
+        'less_than_equal', 'lte',
+        'greater_than', 'gt', 'after',
+        'greater_than_equal', 'gte',
+        'is_any_of', 'is_not_any_of', 'includes_all', 'excludes_all',
+    ];
+
     /** @param T $entity */
     public function save(object $entity, bool $flush = true): void
     {
@@ -48,8 +66,13 @@ trait BaseRepositoryTrait
      * @param string[]                   $sortable   Allowed field names for sorting
      * @param string[]                   $searchable Fields to apply ILIKE search on
      * @param array<string, FilterInput> $filterable Allowed filter fields and their definitions
+     * @param bool                       $strict     When true (default), an undeclared sort/filter field, an
+     *                                               unknown operator or a malformed filter is reported instead
+     *                                               of silently ignored
      *
      * @return PaginatedResultRepository<T>
+     *
+     * @throws UndeclaredQueryParameterException when $strict and the query carries rejected parameters
      */
     public function paginate(
         QueryBuilder $qb,
@@ -58,12 +81,20 @@ trait BaseRepositoryTrait
         array $searchable = [],
         int $minSearchLength = 3,
         array $filterable = [],
+        bool $strict = true,
     ): PaginatedResultRepository {
         $alias = $qb->getRootAliases()[0];
 
         $this->applySearch($qb, $alias, $query->q, $searchable, $minSearchLength);
-        $this->applyFilters($qb, $alias, $query->filters, $filterable);
-        $this->applySort($qb, $alias, $query->sort, $query->dir, $sortable);
+        $rejections = [
+            ...$this->applySort($qb, $alias, $query->sort, $query->dir, $sortable),
+            ...$this->applyFilters($qb, $alias, $query->filters, $filterable),
+            ...$query->rejected,
+        ];
+
+        if ($strict && [] !== $rejections) {
+            throw new UndeclaredQueryParameterException(array_values($rejections));
+        }
 
         $total = (int) (clone $qb)
             ->select('COUNT(DISTINCT ' . $alias . '.id)')
@@ -101,15 +132,23 @@ trait BaseRepositoryTrait
 
     /**
      * @param string[] $sortable
+     *
+     * @return list<QueryParameterRejection>
      */
-    private function applySort(QueryBuilder $qb, string $alias, string|null $sort, string $dir, array $sortable): void
+    private function applySort(QueryBuilder $qb, string $alias, string|null $sort, string $dir, array $sortable): array
     {
-        if (null === $sort || !\in_array($sort, $sortable, true)) {
-            return;
+        if (null === $sort) {
+            return [];
+        }
+
+        if (!\in_array($sort, $sortable, true)) {
+            return [new QueryParameterRejection('sort', RejectionReason::NotSortable, $sort)];
         }
 
         $qb->resetDQLPart('orderBy')
             ->orderBy($this->resolvePath($alias, $sort), strtoupper($dir));
+
+        return [];
     }
 
     /**
@@ -128,14 +167,36 @@ trait BaseRepositoryTrait
     /**
      * @param list<FilterCriteria>       $filters
      * @param array<string, FilterInput> $filterable
+     *
+     * @return list<QueryParameterRejection>
      */
-    private function applyFilters(QueryBuilder $qb, string $alias, array $filters, array $filterable): void
+    private function applyFilters(QueryBuilder $qb, string $alias, array $filters, array $filterable): array
     {
         $grouped = [];
+        $rejections = [];
         foreach ($filters as $criteria) {
             if (!isset($filterable[$criteria->field])) {
+                $rejection = new QueryParameterRejection(
+                    'filters.' . $criteria->field,
+                    RejectionReason::NotFilterable,
+                    $criteria->field,
+                );
+                $rejections[$this->rejectionKey($rejection)] = $rejection;
+
                 continue;
             }
+
+            if (!\in_array($criteria->operator, self::FILTER_OPERATORS, true)) {
+                $rejection = new QueryParameterRejection(
+                    'filters.' . $criteria->field,
+                    RejectionReason::UnknownOperator,
+                    $criteria->operator,
+                );
+                $rejections[$this->rejectionKey($rejection)] = $rejection;
+
+                continue;
+            }
+
             $grouped[$criteria->field][] = $criteria;
         }
 
@@ -144,6 +205,13 @@ trait BaseRepositoryTrait
             $path = $field->path ?? $alias . '.' . $fieldName;
             $this->applyFieldFilters($qb, $criteriaList, $field, $path);
         }
+
+        return array_values($rejections);
+    }
+
+    private function rejectionKey(QueryParameterRejection $rejection): string
+    {
+        return $rejection->parameter . '|' . $rejection->reason->value . '|' . ($rejection->value ?? '');
     }
 
     /**
@@ -197,92 +265,45 @@ trait BaseRepositoryTrait
         $values = $criteria->values;
         $param = 'filter_' . preg_replace('/[^a-zA-Z0-9]/', '_', $criteria->field) . '_' . $idx;
 
-        switch ($op) {
-            case 'contains':
-                $qb->setParameter($param, '%' . $values[0] . '%');
+        match ($op) {
+            'contains', 'not_contains' => $qb->setParameter($param, '%' . $values[0] . '%'),
+            'starts_with' => $qb->setParameter($param, $values[0] . '%'),
+            'ends_with' => $qb->setParameter($param, '%' . $values[0]),
+            'is', 'is_not',
+            'less_than', 'lt', 'before',
+            'less_than_equal', 'lte',
+            'greater_than', 'gt', 'after',
+            'greater_than_equal', 'gte' => $qb->setParameter($param, $field->castValue($values[0])),
+            'is_any_of', 'is_not_any_of', 'includes_all', 'excludes_all' => $qb->setParameter($param, $field->castValues($values)),
+            'between', 'not_between' => $qb
+                ->setParameter($param . '_from', $field->castValue($values[0]))
+                ->setParameter($param . '_to', $field->castValue($values[1])),
+            default => null,
+        };
 
-                return 'ILIKE(' . $path . ', :' . $param . ') = TRUE';
-
-            case 'not_contains':
-                $qb->setParameter($param, '%' . $values[0] . '%');
-
-                return 'ILIKE(' . $path . ', :' . $param . ') = FALSE';
-
-            case 'starts_with':
-                $qb->setParameter($param, $values[0] . '%');
-
-                return 'ILIKE(' . $path . ', :' . $param . ') = TRUE';
-
-            case 'ends_with':
-                $qb->setParameter($param, '%' . $values[0]);
-
-                return 'ILIKE(' . $path . ', :' . $param . ') = TRUE';
-
-            case 'is':
-                $qb->setParameter($param, $field->castValue($values[0]));
-
-                return $path . ' = :' . $param;
-
-            case 'is_not':
-                $qb->setParameter($param, $field->castValue($values[0]));
-
-                return $path . ' != :' . $param;
-
-            case 'empty':
-                return FilterCastType::Text === $field->type
-                    ? $qb->expr()->orX($path . ' IS NULL', $path . " = ''")
-                    : $path . ' IS NULL';
-
-            case 'not_empty':
-                return FilterCastType::Text === $field->type
-                    ? $qb->expr()->andX($path . ' IS NOT NULL', $path . " != ''")
-                    : $path . ' IS NOT NULL';
-
-            case 'between':
-                $qb->setParameter($param . '_from', $field->castValue($values[0]));
-                $qb->setParameter($param . '_to', $field->castValue($values[1]));
-
-                return $path . ' BETWEEN :' . $param . '_from AND :' . $param . '_to';
-
-            case 'not_between':
-                $qb->setParameter($param . '_from', $field->castValue($values[0]));
-                $qb->setParameter($param . '_to', $field->castValue($values[1]));
-
-                return $path . ' NOT BETWEEN :' . $param . '_from AND :' . $param . '_to';
-
-            case 'before':
-                $qb->setParameter($param, $field->castValue($values[0]));
-
-                return $path . ' < :' . $param;
-
-            case 'after':
-                $qb->setParameter($param, $field->castValue($values[0]));
-
-                return $path . ' > :' . $param;
-
-            case 'is_any_of':
-                $qb->setParameter($param, $field->castValues($values));
-
-                return $path . ' IN (:' . $param . ')';
-
-            case 'is_not_any_of':
-                $qb->setParameter($param, $field->castValues($values));
-
-                return $path . ' NOT IN (:' . $param . ')';
-
-            case 'includes_all':
-                $qb->setParameter($param, $field->castValues($values));
-
-                return 'CONTAINS(' . $path . ', :' . $param . ') = TRUE';
-
-            case 'excludes_all':
-                $qb->setParameter($param, $field->castValues($values));
-
-                return 'CONTAINS(' . $path . ', :' . $param . ') = FALSE';
-
-            default:
-                return null;
-        }
+        return match ($op) {
+            'contains', 'starts_with', 'ends_with' => 'ILIKE(' . $path . ', :' . $param . ') = TRUE',
+            'not_contains' => 'ILIKE(' . $path . ', :' . $param . ') = FALSE',
+            'is' => $path . ' = :' . $param,
+            'is_not' => $path . ' != :' . $param,
+            'empty' => FilterCastType::Text === $field->type
+                ? $qb->expr()->orX($path . ' IS NULL', $path . " = ''")
+                : $path . ' IS NULL',
+            'not_empty' => FilterCastType::Text === $field->type
+                ? $qb->expr()->andX($path . ' IS NOT NULL', $path . " != ''")
+                : $path . ' IS NOT NULL',
+            'between' => $path . ' BETWEEN :' . $param . '_from AND :' . $param . '_to',
+            'not_between' => $path . ' NOT BETWEEN :' . $param . '_from AND :' . $param . '_to',
+            'less_than', 'lt', 'before' => $path . ' < :' . $param,
+            'less_than_equal', 'lte' => $path . ' <= :' . $param,
+            'greater_than', 'gt', 'after' => $path . ' > :' . $param,
+            'greater_than_equal', 'gte' => $path . ' >= :' . $param,
+            'is_any_of' => $path . ' IN (:' . $param . ')',
+            'is_not_any_of' => $path . ' NOT IN (:' . $param . ')',
+            'includes_all' => 'CONTAINS(' . $path . ', :' . $param . ') = TRUE',
+            'excludes_all' => 'CONTAINS(' . $path . ', :' . $param . ') = FALSE',
+            default => null,
+        };
     }
 
     /** @return T|null */

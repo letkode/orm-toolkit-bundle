@@ -9,6 +9,7 @@ use Doctrine\ORM\QueryBuilder;
 use Letkode\OrmToolkitBundle\Trait\Repository\BaseRepositoryTrait;
 use Letkode\QueryFilterBundle\Filter\FilterCriteria;
 use Letkode\QueryFilterBundle\Filter\FilterInput;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -22,10 +23,22 @@ final class FilterTestRepository
     /**
      * @param list<FilterCriteria>       $filters
      * @param array<string, FilterInput> $filterable
+     *
+     * @return list<\Letkode\QueryFilterBundle\Exception\QueryParameterRejection>
      */
-    public function applyFiltersPublic(QueryBuilder $qb, string $alias, array $filters, array $filterable): void
+    public function applyFiltersPublic(QueryBuilder $qb, string $alias, array $filters, array $filterable): array
     {
-        $this->applyFilters($qb, $alias, $filters, $filterable);
+        return $this->applyFilters($qb, $alias, $filters, $filterable);
+    }
+
+    /**
+     * @param string[] $sortable
+     *
+     * @return list<\Letkode\QueryFilterBundle\Exception\QueryParameterRejection>
+     */
+    public function applySortPublic(QueryBuilder $qb, string $alias, string|null $sort, string $dir, array $sortable): array
+    {
+        return $this->applySort($qb, $alias, $sort, $dir, $sortable);
     }
 }
 
@@ -115,7 +128,7 @@ final class BaseRepositoryTraitFilterTest extends TestCase
     }
 
     // -------------------------------------------------------------------------
-    // date — between, not_between, before, after
+    // date — between, not_between, less_than, less_than_equal, greater_than, greater_than_equal
     // -------------------------------------------------------------------------
 
     public function testBetweenOperatorOnDateType(): void
@@ -158,7 +171,25 @@ final class BaseRepositoryTraitFilterTest extends TestCase
         self::assertSame('u.createdAt NOT BETWEEN :filter_createdAt_0_from AND :filter_createdAt_0_to', $wheres[0]);
     }
 
-    public function testBeforeOperatorOnDateType(): void
+    /**
+     * @return iterable<string, array{string, string}>
+     */
+    public static function comparisonOperatorProvider(): iterable
+    {
+        yield 'less_than' => ['less_than', '<'];
+        yield 'lt alias' => ['lt', '<'];
+        yield 'before alias' => ['before', '<'];
+        yield 'less_than_equal' => ['less_than_equal', '<='];
+        yield 'lte alias' => ['lte', '<='];
+        yield 'greater_than' => ['greater_than', '>'];
+        yield 'gt alias' => ['gt', '>'];
+        yield 'after alias' => ['after', '>'];
+        yield 'greater_than_equal' => ['greater_than_equal', '>='];
+        yield 'gte alias' => ['gte', '>='];
+    }
+
+    #[DataProvider('comparisonOperatorProvider')]
+    public function testComparisonOperatorOnDateType(string $operator, string $sqlOperator): void
     {
         $params = [];
         $wheres = [];
@@ -167,33 +198,14 @@ final class BaseRepositoryTraitFilterTest extends TestCase
         $this->repo->applyFiltersPublic(
             $qb,
             'u',
-            [new FilterCriteria('createdAt', 'before', ['2024-12-31'])],
+            [new FilterCriteria('createdAt', $operator, ['2024-12-31'])],
             ['createdAt' => FilterInput::date()],
         );
 
         self::assertInstanceOf(\DateTimeImmutable::class, $params['filter_createdAt_0']);
         self::assertSame('2024-12-31', $params['filter_createdAt_0']->format('Y-m-d'));
         self::assertCount(1, $wheres);
-        self::assertSame('u.createdAt < :filter_createdAt_0', $wheres[0]);
-    }
-
-    public function testAfterOperatorOnDateType(): void
-    {
-        $params = [];
-        $wheres = [];
-        $qb = $this->createQbMock($params, $wheres);
-
-        $this->repo->applyFiltersPublic(
-            $qb,
-            'u',
-            [new FilterCriteria('createdAt', 'after', ['2024-01-01'])],
-            ['createdAt' => FilterInput::date()],
-        );
-
-        self::assertInstanceOf(\DateTimeImmutable::class, $params['filter_createdAt_0']);
-        self::assertSame('2024-01-01', $params['filter_createdAt_0']->format('Y-m-d'));
-        self::assertCount(1, $wheres);
-        self::assertSame('u.createdAt > :filter_createdAt_0', $wheres[0]);
+        self::assertSame('u.createdAt ' . $sqlOperator . ' :filter_createdAt_0', $wheres[0]);
     }
 
     // -------------------------------------------------------------------------
@@ -234,13 +246,13 @@ final class BaseRepositoryTraitFilterTest extends TestCase
         $wheres = [];
         $qb = $this->createQbMock($params, $wheres);
 
-        // before + after on the same date field → AND
+        // greater_than + less_than on the same date field → AND
         $this->repo->applyFiltersPublic(
             $qb,
             'u',
             [
-                new FilterCriteria('createdAt', 'after', ['2024-01-01']),
-                new FilterCriteria('createdAt', 'before', ['2024-12-31']),
+                new FilterCriteria('createdAt', 'greater_than', ['2024-01-01']),
+                new FilterCriteria('createdAt', 'less_than', ['2024-12-31']),
             ],
             ['createdAt' => FilterInput::date()],
         );
@@ -258,14 +270,14 @@ final class BaseRepositoryTraitFilterTest extends TestCase
         $wheres = [];
         $qb = $this->createQbMock($params, $wheres);
 
-        // two between (→ OR) + one before (→ AND with the OR group)
+        // two between (→ OR) + one less_than (→ AND with the OR group)
         $this->repo->applyFiltersPublic(
             $qb,
             'u',
             [
                 new FilterCriteria('createdAt', 'between', ['2024-01-01', '2024-03-31']),
                 new FilterCriteria('createdAt', 'between', ['2024-07-01', '2024-09-30']),
-                new FilterCriteria('createdAt', 'before', ['2025-01-01']),
+                new FilterCriteria('createdAt', 'less_than', ['2025-01-01']),
             ],
             ['createdAt' => FilterInput::date()],
         );
