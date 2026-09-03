@@ -101,6 +101,19 @@ validate or infer joins, same responsibility as `FilterInput::path`. Ordering on
 to-many join can duplicate rows in the paginated result (the usual Doctrine to-many fan-out); prefer
 sorting/searching on a to-one relation, or on a column of the root entity, when possible.
 
+#### Strict mode
+
+`paginate()` validates the request against the declared allowlists before touching the database.
+By default (`strict: true`) an undeclared sort field, an undeclared filter field, an unknown filter
+operator or a malformed filter entry throws `Letkode\QueryFilterBundle\Exception\UndeclaredQueryParameterException`,
+which carries the full list of rejections (`->rejections`) so the caller can report them all at once
+and translate them to a response (e.g. `422`). The exception is HTTP-agnostic. A `q` shorter than
+`minSearchLength` is not a rejection — search is simply not applied.
+
+```php
+$repo->paginate($qb, $query, sortable: ['name'], strict: false); // legacy: silently ignore
+```
+
 ### `TranslatableRepositoryTrait`
 
 ```php
