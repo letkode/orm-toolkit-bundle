@@ -6,6 +6,7 @@ namespace Letkode\OrmToolkitBundle\Trait\Repository;
 
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Query\Expr\Andx;
+use Doctrine\ORM\Query\Expr\OrderBy;
 use Doctrine\ORM\Query\Expr\Orx;
 use Doctrine\ORM\QueryBuilder;
 use Letkode\CommonBundle\Exception\EntityNotFoundException;
@@ -96,6 +97,8 @@ trait BaseRepositoryTrait
             throw new UndeclaredQueryParameterException(array_values($rejections));
         }
 
+        $this->applyDeterministicOrder($qb, $alias);
+
         $total = (int) (clone $qb)
             ->select('COUNT(DISTINCT ' . $alias . '.id)')
             ->resetDQLPart('orderBy')
@@ -110,6 +113,31 @@ trait BaseRepositoryTrait
             ->getResult();
 
         return new PaginatedResultRepository($data, $total, $query->page, $query->perPage);
+    }
+
+    /**
+     * Appends the root id as the final ORDER BY tiebreaker so offset pagination
+     * has a total ordering. Rows sharing the primary sort value — or a query with
+     * no sort at all — otherwise come back in the database's physical row order,
+     * which on PostgreSQL shifts after an UPDATE, letting rows repeat across pages
+     * or be skipped. Skipped when the query already orders by the root id.
+     */
+    private function applyDeterministicOrder(QueryBuilder $qb, string $alias): void
+    {
+        $idPath = $alias . '.id';
+
+        /** @var list<OrderBy> $orderBy */
+        $orderBy = $qb->getDQLPart('orderBy');
+
+        foreach ($orderBy as $part) {
+            foreach ($part->getParts() as $clause) {
+                if ($clause === $idPath || str_starts_with($clause, $idPath . ' ')) {
+                    return;
+                }
+            }
+        }
+
+        $qb->addOrderBy($idPath, 'ASC');
     }
 
     /**
