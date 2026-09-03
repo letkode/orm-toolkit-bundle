@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Letkode\OrmToolkitBundle\Tests\Trait\Repository;
 
 use Doctrine\ORM\Query\Expr;
+use Doctrine\ORM\Query\Expr\OrderBy;
 use Doctrine\ORM\QueryBuilder;
 use Letkode\OrmToolkitBundle\Trait\Repository\BaseRepositoryTrait;
 use Letkode\QueryFilterBundle\Exception\QueryParameterRejection;
@@ -47,6 +48,11 @@ final class StrictTestRepository
     public function buildFilterExpressionPublic(QueryBuilder $qb, FilterCriteria $criteria, FilterInput $field): string|object|null
     {
         return $this->buildFilterExpression($qb, $criteria, $field, 'u.field', 0);
+    }
+
+    public function applyDeterministicOrderPublic(QueryBuilder $qb, string $alias): void
+    {
+        $this->applyDeterministicOrder($qb, $alias);
     }
 
     /** @return list<string> */
@@ -243,6 +249,62 @@ final class BaseRepositoryTraitStrictTest extends TestCase
         self::assertNotContains('wat', $this->repo->filterOperators());
     }
 
+    // -------------------------------------------------------------------------
+    // applyDeterministicOrder() — total ordering for offset pagination
+    // -------------------------------------------------------------------------
+
+    public function testDeterministicOrderAppendsRootIdWhenQueryHasNoOrderBy(): void
+    {
+        $added = [];
+        $this->repo->applyDeterministicOrderPublic($this->orderByQb([], $added), 'u');
+
+        self::assertSame(['u.id ASC'], $added);
+    }
+
+    public function testDeterministicOrderAppendsRootIdWhenSortingByAnotherColumn(): void
+    {
+        $added = [];
+        $this->repo->applyDeterministicOrderPublic($this->orderByQb([new OrderBy('u.name', 'ASC')], $added), 'u');
+
+        self::assertSame(['u.id ASC'], $added);
+    }
+
+    public function testDeterministicOrderSkippedWhenAlreadyOrderingByRootId(): void
+    {
+        $added = [];
+        $this->repo->applyDeterministicOrderPublic($this->orderByQb([new OrderBy('u.id', 'DESC')], $added), 'u');
+
+        self::assertSame([], $added);
+    }
+
+    public function testDeterministicOrderStillAppendsWhenOrderingByAJoinedId(): void
+    {
+        $added = [];
+        // p.id is not unique per root row (many-to-one), so it is not a valid tiebreaker
+        $this->repo->applyDeterministicOrderPublic($this->orderByQb([new OrderBy('p.id', 'ASC')], $added), 'u');
+
+        self::assertSame(['u.id ASC'], $added);
+    }
+
+    /**
+     * @param list<OrderBy> $orderBy
+     * @param list<string>  $added   populated with "<sort> <order>" on addOrderBy()
+     */
+    private function orderByQb(array $orderBy, array &$added): QueryBuilder
+    {
+        $qb = $this->createMock(QueryBuilder::class);
+        $qb->method('getDQLPart')->willReturn($orderBy);
+        $qb->method('addOrderBy')->willReturnCallback(
+            static function (string|OrderBy $sort, string|null $order = null) use ($qb, &$added): QueryBuilder {
+                $added[] = trim($sort . ' ' . ($order ?? ''));
+
+                return $qb;
+            },
+        );
+
+        return $qb;
+    }
+
     /**
      * @param list<string> $wheres
      */
@@ -272,6 +334,8 @@ final class BaseRepositoryTraitStrictTest extends TestCase
         $qb->method('setParameter')->willReturnCallback(static fn (): QueryBuilder => $qb);
         $qb->method('resetDQLPart')->willReturnCallback(static fn (): QueryBuilder => $qb);
         $qb->method('orderBy')->willReturnCallback(static fn (): QueryBuilder => $qb);
+        $qb->method('addOrderBy')->willReturnCallback(static fn (): QueryBuilder => $qb);
+        $qb->method('getDQLPart')->willReturn([]);
         $qb->method('andWhere')->willReturnCallback(static fn (): QueryBuilder => $qb);
         $qb->method('select')->willReturnCallback(static fn (): QueryBuilder => $qb);
         $qb->method('setFirstResult')->willReturnCallback(static fn (): QueryBuilder => $qb);

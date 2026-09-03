@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.5.1] - 2026-09-03
+
+### Fixed
+- `BaseRepositoryTrait::paginate()` now appends `<root>.id ASC` as the final `ORDER BY` tiebreaker. Rows that share the primary sort value — or a query with no sort — were returned in the database's physical row order, which on PostgreSQL changes after an `UPDATE`: an edited row jumped position, and under offset pagination rows could repeat across pages or be skipped. The tiebreaker is skipped when the query already orders by the root `id`.
+
+### Note
+- `ORDER BY <sortcol>, id` is fastest with a composite index on `(<sortcol>, id)`; without one PostgreSQL performs an explicit sort. This is not a regression — the query already sorted before this change.
+
+---
+
 ## [1.5.0] - 2026-09-03
 
 ### Added
