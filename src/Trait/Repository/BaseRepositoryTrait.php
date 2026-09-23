@@ -9,7 +9,7 @@ use Doctrine\ORM\Query\Expr\Andx;
 use Doctrine\ORM\Query\Expr\OrderBy;
 use Doctrine\ORM\Query\Expr\Orx;
 use Doctrine\ORM\QueryBuilder;
-use Letkode\CommonBundle\Exception\EntityNotFoundException;
+use Letkode\OrmToolkitBundle\Exception\Http\EntityNotFoundException;
 use Letkode\QueryFilterBundle\Exception\QueryParameterRejection;
 use Letkode\QueryFilterBundle\Exception\RejectionReason;
 use Letkode\QueryFilterBundle\Exception\UndeclaredQueryParameterException;

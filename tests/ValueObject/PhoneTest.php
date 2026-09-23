@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Letkode\OrmToolkitBundle\Tests\ValueObject;
 
-use Letkode\CommonBundle\Exception\ValueObjectException;
+use Letkode\OrmToolkitBundle\Exception\Validation\ValueObjectException;
 use Letkode\OrmToolkitBundle\ValueObject\Phone;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;

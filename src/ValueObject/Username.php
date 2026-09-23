@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Letkode\OrmToolkitBundle\ValueObject;
 
-use Letkode\CommonBundle\Exception\ValueObjectException;
+use Letkode\OrmToolkitBundle\Exception\Validation\ValueObjectException;
 
 final readonly class Username
 {

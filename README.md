@@ -39,14 +39,7 @@ class Product
 }
 ```
 
-### `HasTranslationsTrait`
-
-Adds a `translations` jsonb column for multi-locale field values.
-
-```php
-$entity->setTranslation('es', 'name', 'Producto');
-$entity->getTranslation('es', 'name'); // 'Producto'
-```
+> `HasTranslationsTrait` moved to `letkode/locale-bundle` (`Letkode\LocaleBundle\Trait\HasTranslationsTrait`) — see that package's README. `doctrine/orm` is `suggest`-only there, so it stays an opt-in dependency for apps that don't need entity-level translations.
 
 ### `ParameterTrait`
 

@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.0.0] - 2026-09-23
+
+### Added
+- `Exception\Http\EntityNotFoundException` and `Exception\Validation\ValueObjectException` — now owned by this bundle instead of being borrowed from `letkode/common-bundle`. They were the only two classes this bundle pulled from it (used by `BaseRepositoryTrait` and the `ValueObject\*` types), so the dependency added no other value here and just coupled an unrelated release cycle to this one.
+
+### Removed
+- `Trait\Entity\HasTranslationsTrait` — moved to `letkode/locale-bundle` as `Trait\HasTranslationsTrait`, alongside the rest of the translation-related classes (`Provider\LocaleProvider`, `Applier\TranslatableFieldApplier`, `Trait\HasEnumTranslationLabelTrait`). This bundle stays Doctrine-focused; translation concerns are now grouped in one package regardless of whether they touch the ORM.
+- `letkode/common-bundle` requirement — no longer used anywhere in this bundle after the exception classes above became local.
+
+### Migration
+- Require `letkode/locale-bundle` and update imports: `Letkode\OrmToolkitBundle\Trait\Entity\HasTranslationsTrait` → `Letkode\LocaleBundle\Trait\HasTranslationsTrait`
+- Update imports: `Letkode\CommonBundle\Exception\Http\EntityNotFoundException` → `Letkode\OrmToolkitBundle\Exception\Http\EntityNotFoundException`, `Letkode\CommonBundle\Exception\Validation\ValueObjectException` → `Letkode\OrmToolkitBundle\Exception\Validation\ValueObjectException`
+
+---
+
 ## [1.5.1] - 2026-09-03
 
 ### Fixed
