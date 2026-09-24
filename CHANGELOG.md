@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - `Exception\Http\EntityNotFoundException` and `Exception\Validation\ValueObjectException` — now owned by this bundle instead of being borrowed from `letkode/common-bundle`. They were the only two classes this bundle pulled from it (used by `BaseRepositoryTrait` and the `ValueObject\*` types), so the dependency added no other value here and just coupled an unrelated release cycle to this one.
+- `Doctrine\TransactionRunner` — runs a callback inside a Doctrine transaction, closing the EntityManager only for genuine failures. `EntityManagerInterface::wrapInTransaction()` closes it on *any* exception, including a routine business rejection, which leaves it unusable for the rest of the request (breaking, for example, a `kernel.terminate` listener that still needs to persist/flush). Callers pass which of their own exception types (via `recoverableExceptions: [...]`) count as an expected rejection; the bundle stays unaware of any concrete exception class.
 
 ### Removed
 - `Trait\Entity\HasTranslationsTrait` — moved to `letkode/locale-bundle` as `Trait\HasTranslationsTrait`, alongside the rest of the translation-related classes (`Provider\LocaleProvider`, `Applier\TranslatableFieldApplier`, `Trait\HasEnumTranslationLabelTrait`). This bundle stays Doctrine-focused; translation concerns are now grouped in one package regardless of whether they touch the ORM.
