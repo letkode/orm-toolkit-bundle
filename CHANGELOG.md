@@ -7,7 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [2.0.0] - 2026-09-23
+## [2.1.0] - 2026-09-24
+
+> Tagged as `2.1.0` instead of `2.0.0` — Packagist normalizes `v2.0.0` and `2.0.0` to the same version, and had already indexed the version from the earlier, wrongly-prefixed `v2.0.0` tag before it was deleted. Content-wise this is the same breaking change described below; only the version number moved to avoid the collision.
 
 ### Added
 - `Exception\Http\EntityNotFoundException` and `Exception\Validation\ValueObjectException` — now owned by this bundle instead of being borrowed from `letkode/common-bundle`. They were the only two classes this bundle pulled from it (used by `BaseRepositoryTrait` and the `ValueObject\*` types), so the dependency added no other value here and just coupled an unrelated release cycle to this one.
