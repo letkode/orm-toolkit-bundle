@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.0.1] - 2026-09-24
+
+### Note
+- Re-tagged as `2.0.1` — `2.0.0` (and the earlier, wrongly-prefixed `v2.0.0`) failed to sync correctly on Packagist. No code changes since `2.0.0`; see that section below for the actual content of this release.
+
+---
+
 ## [2.0.0] - 2026-09-23
 
 ### Added
