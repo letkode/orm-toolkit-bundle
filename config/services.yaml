@@ -10,4 +10,5 @@ services:
             - '../src/Trait/'
             - '../src/ValueObject/'
             - '../src/Attribute/'
+            - '../src/Exception/'
             - '../src/Doctrine/DQL/'

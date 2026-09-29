@@ -8,7 +8,8 @@
         "doctrine/doctrine-bundle": "^3.0",
         "doctrine/orm": "^3.0",
         "gedmo/doctrine-extensions": "^3.0",
-        "letkode/query-filter-bundle": "^1.4",
+        "letkode/http-exception-bundle": "^1.2",
+        "letkode/query-filter-bundle": "^1.6",
         "symfony/serializer": "^7.0 || ^8.0",
         "symfony/uid": "^7.0 || ^8.0",
         "symfony/validator": "^7.0 || ^8.0"

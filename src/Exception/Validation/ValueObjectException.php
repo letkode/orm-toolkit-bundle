@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Letkode\OrmToolkitBundle\Exception\Validation;
 
-final class ValueObjectException extends \InvalidArgumentException
+class ValueObjectException extends \InvalidArgumentException
 {
     /**
      * @param string               $message           human-readable English message (for logs/traces)

@@ -4,6 +4,9 @@ parameters:
         - src
         - tests
     treatPhpDocTypesAsCertain: false
+    # Registers the deprecated EntityNotFoundException alias so the static analysis can resolve the legacy name.
+    bootstrapFiles:
+        - src/Exception/Http/EntityNotFoundException.php
     ignoreErrors:
         -
             message: '#^Trait .+ is used zero times and is not analysed\.$#'

@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.2.0] - 2026-09-29
+
+### Changed
+- `BaseRepositoryTrait::findOrFailByUuid()` now throws `Letkode\HttpExceptionBundle\Exception\EntityNotFoundException` (404, error code `ENTITY_NOT_FOUND`) from `letkode/http-exception-bundle`, so an HTTP exception listener renders it as a 404 instead of a 500. The bundle's own copy of the exception did not implement `HttpStatusExceptionInterface`.
+- `Exception\Http\EntityNotFoundException` is now a deprecated alias of the shared exception: existing `catch` blocks and `new` calls keep working.
+- `Exception\Validation\ValueObjectException` is no longer `final`, so it can be extended.
+- `letkode/query-filter-bundle` requirement raised to `^1.6`, whose `UndeclaredQueryParameterException` (thrown by `paginate()` in strict mode) is now an HTTP status exception answered as a 422 with the errors by parameter.
+
+### Added
+- `letkode/http-exception-bundle` `^1.2` is now required.
+
+---
+
 ## [2.1.0] - 2026-09-24
 
 > Tagged as `2.1.0` instead of `2.0.0` — Packagist normalizes `v2.0.0` and `2.0.0` to the same version, and had already indexed the version from the earlier, wrongly-prefixed `v2.0.0` tag before it was deleted. Content-wise this is the same breaking change described below; only the version number moved to avoid the collision.

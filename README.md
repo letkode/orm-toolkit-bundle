@@ -69,7 +69,7 @@ use Letkode\QueryFilterBundle\Request\FilterQueryRequest;
 $repo->save($entity);
 $repo->remove($entity);
 $repo->findByUuid($uuid);           // returns T|null
-$repo->findOrFailByUuid($uuid);     // throws EntityNotFoundException
+$repo->findOrFailByUuid($uuid);     // throws Letkode\HttpExceptionBundle\Exception\EntityNotFoundException (404)
 $repo->paginate($qb, $query, sortable: ['name'], searchable: ['name', 'email']);
 // $query is a Letkode\QueryFilterBundle\Request\FilterQueryRequest
 ```
@@ -100,7 +100,8 @@ sorting/searching on a to-one relation, or on a column of the root entity, when 
 By default (`strict: true`) an undeclared sort field, an undeclared filter field, an unknown filter
 operator or a malformed filter entry throws `Letkode\QueryFilterBundle\Exception\UndeclaredQueryParameterException`,
 which carries the full list of rejections (`->rejections`) so the caller can report them all at once
-and translate them to a response (e.g. `422`). The exception is HTTP-agnostic. A `q` shorter than
+and it is an HTTP status exception (`422`, with the errors by parameter), so the `ExceptionListener` of
+`letkode/http-exception-bundle` renders it without any extra code. A `q` shorter than
 `minSearchLength` is not a rejection — search is simply not applied.
 
 ```php
@@ -147,10 +148,10 @@ Useful for ordering and filtering on translated values stored in a jsonb `transl
 - PHP `^8.4`
 - Symfony `^7.0 || ^8.0`
 - `doctrine/orm` `^3.0`
-- `doctrine/bundle` `^2.0`
+- `doctrine/doctrine-bundle` `^3.0`
 - `gedmo/doctrine-extensions` `^3.0`
-- `letkode/common-bundle` `^1.0`
-- `letkode/query-filter-bundle` `^1.0`
+- `letkode/http-exception-bundle` `^1.2`
+- `letkode/query-filter-bundle` `^1.6`
 
 ---
 
