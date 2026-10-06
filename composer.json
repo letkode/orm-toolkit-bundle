@@ -5,6 +5,7 @@
     "license": "MIT",
     "require": {
         "php": "^8.4",
+        "letkode/config-publisher": "^1.0",
         "doctrine/doctrine-bundle": "^3.0",
         "doctrine/orm": "^3.0",
         "gedmo/doctrine-extensions": "^3.0",
@@ -34,6 +35,11 @@
         "symfony": {
             "bundles": {
                 "Letkode\\OrmToolkitBundle\\LetkodeOrmToolkitBundle": ["all"]
+            }
+        },
+        "letkode": {
+            "publish": {
+                "config/packages/letkode_orm_toolkit.yaml": "resources/config/letkode_orm_toolkit.yaml.dist"
             }
         }
     }

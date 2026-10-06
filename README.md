@@ -172,3 +172,11 @@ letkode_orm_toolkit:
 
 `'legal_name' => FilterInput::text()` then filters on `alias.legalName`. An explicit
 `FilterInput::text(path: 'co.legal_name')` is never converted.
+
+To get a commented copy of the config in your project:
+
+```bash
+vendor/bin/letkode-publish orm-toolkit
+```
+
+It writes `config/packages/letkode_orm_toolkit.yaml` and never overwrites an existing file unless you add `--force`. `--dry-run` shows what it would do.
