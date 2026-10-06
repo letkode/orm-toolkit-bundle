@@ -6,6 +6,8 @@ namespace Letkode\OrmToolkitBundle\Tests\Trait\Repository;
 
 use Doctrine\ORM\Query\Expr;
 use Doctrine\ORM\QueryBuilder;
+use Letkode\OrmToolkitBundle\Naming\PropertyCase;
+use Letkode\OrmToolkitBundle\Naming\PropertyCaseRegistry;
 use Letkode\OrmToolkitBundle\Trait\Repository\BaseRepositoryTrait;
 use Letkode\QueryFilterBundle\Filter\FilterCriteria;
 use Letkode\QueryFilterBundle\Filter\FilterInput;
@@ -51,6 +53,11 @@ final class BaseRepositoryTraitFilterTest extends TestCase
         $this->repo = new FilterTestRepository();
     }
 
+    protected function tearDown(): void
+    {
+        PropertyCaseRegistry::set(PropertyCase::None);
+    }
+
     // -------------------------------------------------------------------------
     // Helpers
     // -------------------------------------------------------------------------
@@ -83,6 +90,60 @@ final class BaseRepositoryTraitFilterTest extends TestCase
             });
 
         return $qb;
+    }
+
+    // -------------------------------------------------------------------------
+    // property_case
+    // -------------------------------------------------------------------------
+
+    public function testSnakeKeyIsUsedAsIsByDefault(): void
+    {
+        $params = [];
+        $wheres = [];
+        $qb = $this->createQbMock($params, $wheres);
+
+        $this->repo->applyFiltersPublic(
+            $qb,
+            'c',
+            [new FilterCriteria('legal_name', 'is', ['x'])],
+            ['legal_name' => FilterInput::text()],
+        );
+
+        self::assertStringStartsWith('c.legal_name ', $wheres[0]);
+    }
+
+    public function testSnakeKeyIsCamelizedWhenConfigured(): void
+    {
+        PropertyCaseRegistry::set(PropertyCase::Camel);
+        $params = [];
+        $wheres = [];
+        $qb = $this->createQbMock($params, $wheres);
+
+        $this->repo->applyFiltersPublic(
+            $qb,
+            'c',
+            [new FilterCriteria('legal_name', 'is', ['x'])],
+            ['legal_name' => FilterInput::text()],
+        );
+
+        self::assertStringStartsWith('c.legalName ', $wheres[0]);
+    }
+
+    public function testExplicitPathIsNeverConverted(): void
+    {
+        PropertyCaseRegistry::set(PropertyCase::Camel);
+        $params = [];
+        $wheres = [];
+        $qb = $this->createQbMock($params, $wheres);
+
+        $this->repo->applyFiltersPublic(
+            $qb,
+            'c',
+            [new FilterCriteria('company_name', 'is', ['x'])],
+            ['company_name' => FilterInput::text(path: 'co.legal_name')],
+        );
+
+        self::assertStringStartsWith('co.legal_name ', $wheres[0]);
     }
 
     // -------------------------------------------------------------------------

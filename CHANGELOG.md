@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.3.0] - 2026-10-06
+
+### Added
+- `property_case` bundle option (`none` default | `camel` | `snake`): `BaseRepositoryTrait` converts a filter/sort/search field name that has no explicit path (`FilterInput::path`, dotted field) to the configured spelling of the entity properties, so a `legal_name` key resolves to `legalName`. Any input spelling is accepted (`legal_name`, `legal-name`, `legalName`). Rejections and the allowlists keep the client's original key. Default `none` keeps the previous behavior.
+- `symfony/string` is now required.
+
+---
+
 ## [2.2.0] - 2026-09-29
 
 ### Changed

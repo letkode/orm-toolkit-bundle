@@ -10,6 +10,7 @@ use Doctrine\ORM\Query\Expr\OrderBy;
 use Doctrine\ORM\Query\Expr\Orx;
 use Doctrine\ORM\QueryBuilder;
 use Letkode\HttpExceptionBundle\Exception\EntityNotFoundException;
+use Letkode\OrmToolkitBundle\Naming\PropertyCaseRegistry;
 use Letkode\QueryFilterBundle\Exception\QueryParameterRejection;
 use Letkode\QueryFilterBundle\Exception\RejectionReason;
 use Letkode\QueryFilterBundle\Exception\UndeclaredQueryParameterException;
@@ -185,11 +186,11 @@ trait BaseRepositoryTrait
      * A field containing a dot is already a qualified path (e.g. `p.lastName`, mirroring
      * `FilterInput::path`) and is used as-is; the caller is responsible for the referenced
      * alias being joined on the given QueryBuilder. A bare field name resolves against the
-     * root alias, same as before.
+     * root alias, converted to the configured `property_case`.
      */
     private function resolvePath(string $alias, string $field): string
     {
-        return str_contains($field, '.') ? $field : $alias . '.' . $field;
+        return str_contains($field, '.') ? $field : $alias . '.' . PropertyCaseRegistry::get()->convert($field);
     }
 
     /**
@@ -230,7 +231,7 @@ trait BaseRepositoryTrait
 
         foreach ($grouped as $fieldName => $criteriaList) {
             $field = $filterable[$fieldName];
-            $path = $field->path ?? $alias . '.' . $fieldName;
+            $path = $field->path ?? $alias . '.' . PropertyCaseRegistry::get()->convert($fieldName);
             $this->applyFieldFilters($qb, $criteriaList, $field, $path);
         }
 

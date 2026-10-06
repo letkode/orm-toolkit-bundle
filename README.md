@@ -158,3 +158,17 @@ Useful for ordering and filtering on translated values stored in a jsonb `transl
 ## License
 
 MIT — see [LICENSE](LICENSE).
+
+## Property case
+
+By default a filter/sort/search field name is used as the Doctrine property as-is. If your entities
+use camelCase but your API exposes snake_case keys, declare the property spelling once:
+
+```yaml
+# config/packages/letkode_orm_toolkit.yaml
+letkode_orm_toolkit:
+    property_case: camel   # none (default) | camel | snake
+```
+
+`'legal_name' => FilterInput::text()` then filters on `alias.legalName`. An explicit
+`FilterInput::text(path: 'co.legal_name')` is never converted.

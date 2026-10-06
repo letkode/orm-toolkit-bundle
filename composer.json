@@ -11,6 +11,7 @@
         "letkode/http-exception-bundle": "^1.2",
         "letkode/query-filter-bundle": "^1.6",
         "symfony/serializer": "^7.0 || ^8.0",
+        "symfony/string": "^7.0 || ^8.0",
         "symfony/uid": "^7.0 || ^8.0",
         "symfony/validator": "^7.0 || ^8.0"
     },
