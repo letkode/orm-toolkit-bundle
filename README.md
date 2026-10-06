@@ -176,7 +176,7 @@ letkode_orm_toolkit:
 To get a commented copy of the config in your project:
 
 ```bash
-vendor/bin/letkode-publish orm-toolkit
+bin/console letkode:config:publish orm-toolkit
 ```
 
 It writes `config/packages/letkode_orm_toolkit.yaml` and never overwrites an existing file unless you add `--force`. `--dry-run` shows what it would do.

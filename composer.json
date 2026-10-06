@@ -5,7 +5,7 @@
     "license": "MIT",
     "require": {
         "php": "^8.4",
-        "letkode/config-publisher": "^1.0",
+        "letkode/config-publisher-bundle": "^1.0",
         "doctrine/doctrine-bundle": "^3.0",
         "doctrine/orm": "^3.0",
         "gedmo/doctrine-extensions": "^3.0",

@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.4.1] - 2026-10-06
+
+### Changed
+- Requires `letkode/config-publisher-bundle` instead of `letkode/config-publisher` (the package was renamed). The example file is now published with `bin/console letkode:config:publish orm-toolkit`.
+
+---
+
 ## [2.4.0] - 2026-10-06
 
 ### Added
