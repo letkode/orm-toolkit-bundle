@@ -12,4 +12,3 @@ services:
             - '../src/Attribute/'
             - '../src/Exception/'
             - '../src/Doctrine/DQL/'
-            - '../src/Naming/'

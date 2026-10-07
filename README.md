@@ -161,22 +161,8 @@ MIT — see [LICENSE](LICENSE).
 
 ## Property case
 
-By default a filter/sort/search field name is used as the Doctrine property as-is. If your entities
-use camelCase but your API exposes snake_case keys, declare the property spelling once:
-
-```yaml
-# config/packages/letkode_orm_toolkit.yaml
-letkode_orm_toolkit:
-    property_case: camel   # none (default) | camel | snake
-```
-
-`'legal_name' => FilterInput::text()` then filters on `alias.legalName`. An explicit
-`FilterInput::text(path: 'co.legal_name')` is never converted.
-
-To get a commented copy of the config in your project:
-
-```bash
-bin/console letkode:config:publish orm-toolkit
-```
-
-It writes `config/packages/letkode_orm_toolkit.yaml` and never overwrites an existing file unless you add `--force`. `--dry-run` shows what it would do.
+A filter/sort/search field name without an explicit path is converted to the spelling of your entity
+properties. The `property_case` option and the per-input `propertyCase` argument belong to
+`letkode/query-filter-bundle` (`letkode_query_filter.property_case`); see its README.
+`'legal_name' => FilterInput::text()` then filters on `alias.legalName`, and an explicit path
+(`FilterInput::text(path: 'co.legal_name')`) is never converted.

@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.5.0] - 2026-10-07
+
+### Changed
+- **Breaking:** the `property_case` option and `Naming\PropertyCase` moved to `letkode/query-filter-bundle` `^1.7`, which now owns the path resolution (`FilterInput::resolvePath()`) and also lets a single `FilterInput` override the case with its `propertyCase` argument. Move `letkode_orm_toolkit.property_case` to `letkode_query_filter.property_case` (`config/packages/letkode_query_filter.yaml`); `letkode_orm_toolkit` no longer has any option, so leaving it makes the container fail with an unrecognized option.
+- `BaseRepositoryTrait` resolves a filter's path through `FilterInput::resolvePath()` and only prefixes the alias when the input has no explicit path.
+
+### Removed
+- `Naming\PropertyCase`, `Naming\PropertyCaseRegistry` and the `property_case` bundle option (see above).
+- The publishable example config `resources/config/letkode_orm_toolkit.yaml.dist` and the `letkode/config-publisher-bundle` and `symfony/string` requirements; the example config now ships with `letkode/query-filter-bundle` (`bin/console letkode:config:publish query-filter`).
+
+---
+
 ## [2.4.1] - 2026-10-06
 
 ### Changed

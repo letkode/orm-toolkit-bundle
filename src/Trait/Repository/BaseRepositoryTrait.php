@@ -10,13 +10,13 @@ use Doctrine\ORM\Query\Expr\OrderBy;
 use Doctrine\ORM\Query\Expr\Orx;
 use Doctrine\ORM\QueryBuilder;
 use Letkode\HttpExceptionBundle\Exception\EntityNotFoundException;
-use Letkode\OrmToolkitBundle\Naming\PropertyCaseRegistry;
 use Letkode\QueryFilterBundle\Exception\QueryParameterRejection;
 use Letkode\QueryFilterBundle\Exception\RejectionReason;
 use Letkode\QueryFilterBundle\Exception\UndeclaredQueryParameterException;
 use Letkode\QueryFilterBundle\Filter\FilterCastType;
 use Letkode\QueryFilterBundle\Filter\FilterCriteria;
 use Letkode\QueryFilterBundle\Filter\FilterInput;
+use Letkode\QueryFilterBundle\Filter\PropertyCaseRegistry;
 use Letkode\QueryFilterBundle\Request\FilterQueryRequest;
 use Letkode\QueryFilterBundle\Result\PaginatedResultRepository;
 use Symfony\Component\Uid\Uuid;
@@ -231,7 +231,8 @@ trait BaseRepositoryTrait
 
         foreach ($grouped as $fieldName => $criteriaList) {
             $field = $filterable[$fieldName];
-            $path = $field->path ?? $alias . '.' . PropertyCaseRegistry::get()->convert($fieldName);
+            $resolved = $field->resolvePath($fieldName);
+            $path = null !== $field->path ? $resolved : $alias . '.' . $resolved;
             $this->applyFieldFilters($qb, $criteriaList, $field, $path);
         }
 

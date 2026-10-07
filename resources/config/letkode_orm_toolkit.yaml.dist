@@ -1,6 +1,0 @@
-letkode_orm_toolkit:
-    # Spelling of your entity properties. Field names without an explicit path are converted to it.
-    #   none  - used as-is
-    #   camel - 'legal_name' filters on alias.legalName
-    #   snake - 'legalName' filters on alias.legal_name
-    property_case: none

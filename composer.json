@@ -5,14 +5,12 @@
     "license": "MIT",
     "require": {
         "php": "^8.4",
-        "letkode/config-publisher-bundle": "^1.0",
         "doctrine/doctrine-bundle": "^3.0",
         "doctrine/orm": "^3.0",
         "gedmo/doctrine-extensions": "^3.0",
         "letkode/http-exception-bundle": "^1.2",
-        "letkode/query-filter-bundle": "^1.6",
+        "letkode/query-filter-bundle": "^1.7",
         "symfony/serializer": "^7.0 || ^8.0",
-        "symfony/string": "^7.0 || ^8.0",
         "symfony/uid": "^7.0 || ^8.0",
         "symfony/validator": "^7.0 || ^8.0"
     },
@@ -35,11 +33,6 @@
         "symfony": {
             "bundles": {
                 "Letkode\\OrmToolkitBundle\\LetkodeOrmToolkitBundle": ["all"]
-            }
-        },
-        "letkode": {
-            "publish": {
-                "config/packages/letkode_orm_toolkit.yaml": "resources/config/letkode_orm_toolkit.yaml.dist"
             }
         }
     }

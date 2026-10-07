@@ -6,11 +6,11 @@ namespace Letkode\OrmToolkitBundle\Tests\Trait\Repository;
 
 use Doctrine\ORM\Query\Expr;
 use Doctrine\ORM\QueryBuilder;
-use Letkode\OrmToolkitBundle\Naming\PropertyCase;
-use Letkode\OrmToolkitBundle\Naming\PropertyCaseRegistry;
 use Letkode\OrmToolkitBundle\Trait\Repository\BaseRepositoryTrait;
 use Letkode\QueryFilterBundle\Filter\FilterCriteria;
 use Letkode\QueryFilterBundle\Filter\FilterInput;
+use Letkode\QueryFilterBundle\Filter\PropertyCase;
+use Letkode\QueryFilterBundle\Filter\PropertyCaseRegistry;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
@@ -127,6 +127,23 @@ final class BaseRepositoryTraitFilterTest extends TestCase
         );
 
         self::assertStringStartsWith('c.legalName ', $wheres[0]);
+    }
+
+    public function testLocalPropertyCaseOverridesTheGlobalOne(): void
+    {
+        PropertyCaseRegistry::set(PropertyCase::Camel);
+        $params = [];
+        $wheres = [];
+        $qb = $this->createQbMock($params, $wheres);
+
+        $this->repo->applyFiltersPublic(
+            $qb,
+            'c',
+            [new FilterCriteria('legalName', 'is', ['x'])],
+            ['legalName' => FilterInput::text(propertyCase: PropertyCase::Snake)],
+        );
+
+        self::assertStringStartsWith('c.legal_name ', $wheres[0]);
     }
 
     public function testExplicitPathIsNeverConverted(): void
