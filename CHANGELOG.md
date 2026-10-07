@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.6.0] - 2026-10-07
+
+### Changed
+- Requires `letkode/query-filter-bundle` `^2.0`, where `FilterInput::path` is replaced by `alias`, `property` and `expression`. `BaseRepositoryTrait` filters on the input's `expression` when it has one, otherwise on `<alias>.<property>`: the input's `alias` (the query's root alias when omitted) and its `property` (the key converted to the configured property case when omitted). `paginate()` and the rest of this bundle's own API are unchanged, but a `FilterInput::*(path: ...)` declaration no longer compiles: `path: 'rp.uuid'` becomes `alias: 'rp', property: 'uuid'`.
+
+---
+
 ## [2.5.0] - 2026-10-07
 
 ### Changed

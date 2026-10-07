@@ -184,7 +184,7 @@ trait BaseRepositoryTrait
      * Resolves a sortable/searchable allowlist entry to a Doctrine property path.
      *
      * A field containing a dot is already a qualified path (e.g. `p.lastName`, mirroring
-     * `FilterInput::path`) and is used as-is; the caller is responsible for the referenced
+     * `FilterInput::alias`) and is used as-is; the caller is responsible for the referenced
      * alias being joined on the given QueryBuilder. A bare field name resolves against the
      * root alias, converted to the configured `property_case`.
      */
@@ -231,8 +231,7 @@ trait BaseRepositoryTrait
 
         foreach ($grouped as $fieldName => $criteriaList) {
             $field = $filterable[$fieldName];
-            $resolved = $field->resolvePath($fieldName);
-            $path = null !== $field->path ? $resolved : $alias . '.' . $resolved;
+            $path = $field->expression ?? ($field->alias ?? $alias) . '.' . $field->resolveProperty($fieldName);
             $this->applyFieldFilters($qb, $criteriaList, $field, $path);
         }
 

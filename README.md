@@ -90,7 +90,7 @@ $repo->paginate(
 
 A bare field name (no dot) still resolves against the root alias, exactly as before. The referenced
 alias must already be joined on the `QueryBuilder` passed to `paginate()` — the bundle does not
-validate or infer joins, same responsibility as `FilterInput::path`. Ordering on a path behind a
+validate or infer joins, same responsibility as `FilterInput::alias`. Ordering on a path behind a
 to-many join can duplicate rows in the paginated result (the usual Doctrine to-many fan-out); prefer
 sorting/searching on a to-one relation, or on a column of the root entity, when possible.
 
@@ -161,8 +161,10 @@ MIT — see [LICENSE](LICENSE).
 
 ## Property case
 
-A filter/sort/search field name without an explicit path is converted to the spelling of your entity
-properties. The `property_case` option and the per-input `propertyCase` argument belong to
+A filter's target is built as `alias.property`: the input's `alias` (the root alias when omitted) and
+its `property` (the key converted to your entity properties' spelling when omitted). The
+`property_case` option and the per-input `propertyCase` argument belong to
 `letkode/query-filter-bundle` (`letkode_query_filter.property_case`); see its README.
-`'legal_name' => FilterInput::text()` then filters on `alias.legalName`, and an explicit path
-(`FilterInput::text(path: 'co.legal_name')`) is never converted.
+`'legal_name' => FilterInput::text()` then filters on `<root>.legalName`,
+`FilterInput::text(alias: 'c')` on `c.legalName`, and `FilterInput::text(expression: "CONCAT(u.firstName, ' ', u.lastName)")`
+filters on that DQL expression as-is.

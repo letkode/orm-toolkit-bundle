@@ -146,7 +146,7 @@ final class BaseRepositoryTraitFilterTest extends TestCase
         self::assertStringStartsWith('c.legal_name ', $wheres[0]);
     }
 
-    public function testExplicitPathIsNeverConverted(): void
+    public function testAliasQualifiesTheConvertedKey(): void
     {
         PropertyCaseRegistry::set(PropertyCase::Camel);
         $params = [];
@@ -155,12 +155,62 @@ final class BaseRepositoryTraitFilterTest extends TestCase
 
         $this->repo->applyFiltersPublic(
             $qb,
-            'c',
-            [new FilterCriteria('company_name', 'is', ['x'])],
-            ['company_name' => FilterInput::text(path: 'co.legal_name')],
+            'cr',
+            [new FilterCriteria('legal_name', 'is', ['x'])],
+            ['legal_name' => FilterInput::text(alias: 'c')],
         );
 
-        self::assertStringStartsWith('co.legal_name ', $wheres[0]);
+        self::assertStringStartsWith('c.legalName ', $wheres[0]);
+    }
+
+    public function testExplicitPropertyIsNeverConverted(): void
+    {
+        PropertyCaseRegistry::set(PropertyCase::Camel);
+        $params = [];
+        $wheres = [];
+        $qb = $this->createQbMock($params, $wheres);
+
+        $this->repo->applyFiltersPublic(
+            $qb,
+            'cr',
+            [new FilterCriteria('active', 'is', ['1'])],
+            ['active' => FilterInput::bool(property: 'enabled')],
+        );
+
+        self::assertStringStartsWith('cr.enabled ', $wheres[0]);
+    }
+
+    public function testAliasAndPropertyTargetAJoinedField(): void
+    {
+        $params = [];
+        $wheres = [];
+        $qb = $this->createQbMock($params, $wheres);
+
+        $this->repo->applyFiltersPublic(
+            $qb,
+            'u',
+            [new FilterCriteria('role_policies', 'is_any_of', ['a'])],
+            ['role_policies' => FilterInput::array(alias: 'rp', property: 'uuid')],
+        );
+
+        self::assertStringStartsWith('rp.uuid IN', $wheres[0]);
+    }
+
+    public function testExpressionIsUsedAsTheFilteredValue(): void
+    {
+        PropertyCaseRegistry::set(PropertyCase::Camel);
+        $params = [];
+        $wheres = [];
+        $qb = $this->createQbMock($params, $wheres);
+
+        $this->repo->applyFiltersPublic(
+            $qb,
+            'u',
+            [new FilterCriteria('full_name', 'contains', ['ana'])],
+            ['full_name' => FilterInput::text(expression: "CONCAT(u.firstName, ' ', u.lastName)")],
+        );
+
+        self::assertSame("ILIKE(CONCAT(u.firstName, ' ', u.lastName), :filter_full_name_0) = TRUE", $wheres[0]);
     }
 
     // -------------------------------------------------------------------------
