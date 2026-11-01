@@ -88,6 +88,23 @@ $repo->paginate(
 );
 ```
 
+To sort on a joined entity without making the client send the alias, declare the entry like a
+`filterable` one: the array key is the public name the client sends, and a
+[`SortInput`](https://github.com/letkode/query-filter-bundle) names the alias that owns the field.
+
+```php
+$repo->paginate($qb, $query, sortable: [
+    'createdAt' => SortInput::field(),                              // root alias
+    'legalName' => SortInput::field(alias: 'c'),                    // ?sort=legalName -> c.legalName
+    'company_name' => SortInput::field(alias: 'c', property: 'name'), // explicit property
+]);
+```
+
+The property defaults to the key converted to the configured `property_case`. Plain strings
+(`'createdAt'`, `'p.lastName'`) keep working, matched exactly as the client sends them, and can be
+mixed with `SortInput` entries; prefer `SortInput` for joined fields. A `SortInput` is matched by its
+key only: the qualified path (`c.legalName`) is not accepted.
+
 A bare field name (no dot) still resolves against the root alias, exactly as before. The referenced
 alias must already be joined on the `QueryBuilder` passed to `paginate()` — the bundle does not
 validate or infer joins, same responsibility as `FilterInput::alias`. Ordering on a path behind a

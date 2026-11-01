@@ -6,6 +6,9 @@ namespace Letkode\OrmToolkitBundle\Tests\Trait\Repository;
 
 use Doctrine\ORM\QueryBuilder;
 use Letkode\OrmToolkitBundle\Trait\Repository\BaseRepositoryTrait;
+use Letkode\QueryFilterBundle\Filter\PropertyCase;
+use Letkode\QueryFilterBundle\Filter\PropertyCaseRegistry;
+use Letkode\QueryFilterBundle\Filter\SortInput;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -22,7 +25,7 @@ final class SortSearchTestRepository
         $this->applySearch($qb, $alias, $q, $searchable, $minSearchLength);
     }
 
-    /** @param string[] $sortable */
+    /** @param array<int|string, string|SortInput> $sortable */
     public function applySortPublic(QueryBuilder $qb, string $alias, string|null $sort, string $dir, array $sortable): void
     {
         $this->applySort($qb, $alias, $sort, $dir, $sortable);
@@ -190,5 +193,84 @@ final class BaseRepositoryTraitSortSearchTest extends TestCase
         $this->repo->applySortPublic($qb, 'c', 'p.lastName', 'asc', ['createdAt']);
 
         self::assertSame([], $orderBys);
+    }
+
+    // -------------------------------------------------------------------------
+    // sort — SortInput (public name as key, alias kept internal)
+    // -------------------------------------------------------------------------
+
+    public function testSortInputResolvesTheDeclaredAliasAndKeepsTheClientNameOutOfIt(): void
+    {
+        $orderBys = [];
+        $qb = $this->createSortQbMock($orderBys);
+
+        $this->repo->applySortPublic($qb, 'cr', 'legalName', 'asc', ['legalName' => SortInput::field(alias: 'c')]);
+
+        self::assertCount(1, $orderBys);
+        self::assertSame('c.legalName', $orderBys[0]['path']);
+        self::assertSame('ASC', $orderBys[0]['dir']);
+    }
+
+    public function testSortInputWithoutAliasUsesTheRootAlias(): void
+    {
+        $orderBys = [];
+        $qb = $this->createSortQbMock($orderBys);
+
+        $this->repo->applySortPublic($qb, 'cr', 'createdAt', 'desc', ['createdAt' => SortInput::field()]);
+
+        self::assertSame('cr.createdAt', $orderBys[0]['path']);
+        self::assertSame('DESC', $orderBys[0]['dir']);
+    }
+
+    public function testSortInputExplicitPropertyDiffersFromThePublicName(): void
+    {
+        $orderBys = [];
+        $qb = $this->createSortQbMock($orderBys);
+
+        $sortable = [
+            'company_name' => SortInput::field(alias: 'c', property: 'name'),
+            'contact_name' => SortInput::field(alias: 'ct', property: 'name'),
+        ];
+        $this->repo->applySortPublic($qb, 'cr', 'contact_name', 'asc', $sortable);
+
+        self::assertSame('ct.name', $orderBys[0]['path']);
+    }
+
+    public function testSortInputConvertsTheKeyWithThePropertyCase(): void
+    {
+        PropertyCaseRegistry::set(PropertyCase::Camel);
+
+        try {
+            $orderBys = [];
+            $qb = $this->createSortQbMock($orderBys);
+
+            $this->repo->applySortPublic($qb, 'cr', 'legal_name', 'asc', ['legal_name' => SortInput::field(alias: 'c')]);
+
+            self::assertSame('c.legalName', $orderBys[0]['path']);
+        } finally {
+            PropertyCaseRegistry::set(PropertyCase::None);
+        }
+    }
+
+    public function testSortInputIsNotMatchedByItsQualifiedPath(): void
+    {
+        $orderBys = [];
+        $qb = $this->createSortQbMock($orderBys);
+
+        $this->repo->applySortPublic($qb, 'cr', 'c.legalName', 'asc', ['legalName' => SortInput::field(alias: 'c')]);
+
+        self::assertSame([], $orderBys);
+    }
+
+    public function testSortInputAndLegacyStringsCanBeMixed(): void
+    {
+        $orderBys = [];
+        $qb = $this->createSortQbMock($orderBys);
+        $sortable = ['createdAt', 'legalName' => SortInput::field(alias: 'c')];
+
+        $this->repo->applySortPublic($qb, 'cr', 'createdAt', 'asc', $sortable);
+        $this->repo->applySortPublic($qb, 'cr', 'legalName', 'asc', $sortable);
+
+        self::assertSame(['cr.createdAt', 'c.legalName'], array_column($orderBys, 'path'));
     }
 }

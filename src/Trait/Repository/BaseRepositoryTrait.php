@@ -17,6 +17,7 @@ use Letkode\QueryFilterBundle\Filter\FilterCastType;
 use Letkode\QueryFilterBundle\Filter\FilterCriteria;
 use Letkode\QueryFilterBundle\Filter\FilterInput;
 use Letkode\QueryFilterBundle\Filter\PropertyCaseRegistry;
+use Letkode\QueryFilterBundle\Filter\SortInput;
 use Letkode\QueryFilterBundle\Request\FilterQueryRequest;
 use Letkode\QueryFilterBundle\Result\PaginatedResultRepository;
 use Symfony\Component\Uid\Uuid;
@@ -65,12 +66,14 @@ trait BaseRepositoryTrait
     }
 
     /**
-     * @param string[]                   $sortable   Allowed field names for sorting
-     * @param string[]                   $searchable Fields to apply ILIKE search on
-     * @param array<string, FilterInput> $filterable Allowed filter fields and their definitions
-     * @param bool                       $strict     When true (default), an undeclared sort/filter field, an
-     *                                               unknown operator or a malformed filter is reported instead
-     *                                               of silently ignored
+     * @param array<int|string, string|SortInput> $sortable   Allowed sort fields: `'name'` / `'p.name'` (a bare or alias-qualified
+     *                                                        field, matched as the client sends it), or `'publicName' => SortInput::field(...)`
+     *                                                        (the key is the name the client sends; its alias never reaches the API)
+     * @param string[]                            $searchable Fields to apply ILIKE search on
+     * @param array<string, FilterInput>          $filterable Allowed filter fields and their definitions
+     * @param bool                                $strict     When true (default), an undeclared sort/filter field, an
+     *                                                        unknown operator or a malformed filter is reported instead
+     *                                                        of silently ignored
      *
      * @return PaginatedResultRepository<T>
      *
@@ -160,7 +163,7 @@ trait BaseRepositoryTrait
     }
 
     /**
-     * @param string[] $sortable
+     * @param array<int|string, string|SortInput> $sortable
      *
      * @return list<QueryParameterRejection>
      */
@@ -170,14 +173,36 @@ trait BaseRepositoryTrait
             return [];
         }
 
-        if (!\in_array($sort, $sortable, true)) {
+        $path = $this->resolveSortPath($alias, $sort, $sortable);
+        if (null === $path) {
             return [new QueryParameterRejection('sort', RejectionReason::NotSortable, $sort)];
         }
 
         $qb->resetDQLPart('orderBy')
-            ->orderBy($this->resolvePath($alias, $sort), strtoupper($dir));
+            ->orderBy($path, strtoupper($dir));
 
         return [];
+    }
+
+    /**
+     * @param array<int|string, string|SortInput> $sortable
+     */
+    private function resolveSortPath(string $alias, string $sort, array $sortable): string|null
+    {
+        if (($sortable[$sort] ?? null) instanceof SortInput) {
+            $input = $sortable[$sort];
+
+            return ($input->alias ?? $alias) . '.' . $input->resolveProperty($sort);
+        }
+
+        // Legacy entries: a plain string, matched exactly as the client sends it.
+        foreach ($sortable as $key => $entry) {
+            if (\is_string($entry) && !\is_string($key) && $entry === $sort) {
+                return $this->resolvePath($alias, $sort);
+            }
+        }
+
+        return null;
     }
 
     /**

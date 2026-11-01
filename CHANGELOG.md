@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.7.0] - 2026-11-01
+
+### Added
+- `paginate()`'s `sortable` accepts `'publicName' => SortInput::field(...)` entries (`Letkode\QueryFilterBundle\Filter\SortInput`), the sorting counterpart of `filterable`: the key is the name the client sends in `sort` and the input names the `alias` that owns the field (the query's root alias when omitted) and, optionally, the `property` (the key converted to the configured property case when omitted). A field of a joined entity can be sorted without the client sending the query alias (`?sort=legalName` orders by `c.legalName`). A `SortInput` entry is matched by its key only, so the qualified path is not accepted for it. Plain-string entries can be mixed in.
+
+### Deprecated
+- Plain-string `sortable` entries that carry an alias (`'p.lastName'`): they make the client send the query alias. They keep working unchanged; declare them as `'lastName' => SortInput::field(alias: 'p')` instead.
+
+### Changed
+- Requires `letkode/query-filter-bundle` `^2.1`, which provides `SortInput`.
+
+---
+
 ## [2.6.0] - 2026-10-07
 
 ### Changed
