@@ -252,6 +252,18 @@ final class BaseRepositoryTraitSortSearchTest extends TestCase
         }
     }
 
+    public function testSortInputExpressionIsOrderedByAsIs(): void
+    {
+        $orderBys = [];
+        $qb = $this->createSortQbMock($orderBys);
+        $expression = "CONCAT(u.firstName, ' ', u.lastName)";
+
+        $this->repo->applySortPublic($qb, 'cr', 'full_name', 'desc', ['full_name' => SortInput::field(expression: $expression)]);
+
+        self::assertSame($expression, $orderBys[0]['path']);
+        self::assertSame('DESC', $orderBys[0]['dir']);
+    }
+
     public function testSortInputIsNotMatchedByItsQualifiedPath(): void
     {
         $orderBys = [];

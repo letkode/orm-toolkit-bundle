@@ -192,7 +192,7 @@ trait BaseRepositoryTrait
         if (($sortable[$sort] ?? null) instanceof SortInput) {
             $input = $sortable[$sort];
 
-            return ($input->alias ?? $alias) . '.' . $input->resolveProperty($sort);
+            return $input->expression ?? ($input->alias ?? $alias) . '.' . $input->resolveProperty($sort);
         }
 
         // Legacy entries: a plain string, matched exactly as the client sends it.
