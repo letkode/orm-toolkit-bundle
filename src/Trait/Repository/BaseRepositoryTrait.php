@@ -10,16 +10,16 @@ use Doctrine\ORM\Query\Expr\OrderBy;
 use Doctrine\ORM\Query\Expr\Orx;
 use Doctrine\ORM\QueryBuilder;
 use Letkode\HttpExceptionBundle\Exception\EntityNotFoundException;
-use Letkode\QueryFilterBundle\Exception\QueryParameterRejection;
-use Letkode\QueryFilterBundle\Exception\RejectionReason;
-use Letkode\QueryFilterBundle\Exception\UndeclaredQueryParameterException;
-use Letkode\QueryFilterBundle\Filter\FilterCastType;
-use Letkode\QueryFilterBundle\Filter\FilterCriteria;
-use Letkode\QueryFilterBundle\Filter\FilterInput;
-use Letkode\QueryFilterBundle\Filter\PropertyCaseRegistry;
-use Letkode\QueryFilterBundle\Filter\SortInput;
-use Letkode\QueryFilterBundle\Request\FilterQueryRequest;
-use Letkode\QueryFilterBundle\Result\PaginatedResultRepository;
+use Letkode\ListQueryBundle\Exception\QueryParameterRejection;
+use Letkode\ListQueryBundle\Exception\RejectionReason;
+use Letkode\ListQueryBundle\Exception\UndeclaredQueryParameterException;
+use Letkode\ListQueryBundle\Filter\FilterCastType;
+use Letkode\ListQueryBundle\Filter\FilterCriteria;
+use Letkode\ListQueryBundle\Filter\FilterInput;
+use Letkode\ListQueryBundle\Naming\PropertyCaseRegistry;
+use Letkode\ListQueryBundle\Request\ListQueryRequest;
+use Letkode\ListQueryBundle\Result\PaginatedResult;
+use Letkode\ListQueryBundle\Sort\SortInput;
 use Symfony\Component\Uid\Uuid;
 
 /**
@@ -66,28 +66,27 @@ trait BaseRepositoryTrait
     }
 
     /**
-     * @param array<int|string, string|SortInput> $sortable   Allowed sort fields: `'name'` / `'p.name'` (a bare or alias-qualified
-     *                                                        field, matched as the client sends it), or `'publicName' => SortInput::field(...)`
-     *                                                        (the key is the name the client sends; its alias never reaches the API)
-     * @param string[]                            $searchable Fields to apply ILIKE search on
-     * @param array<string, FilterInput>          $filterable Allowed filter fields and their definitions
-     * @param bool                                $strict     When true (default), an undeclared sort/filter field, an
-     *                                                        unknown operator or a malformed filter is reported instead
-     *                                                        of silently ignored
+     * @param array<string, SortInput>   $sortable   Allowed sort fields: `'publicName' => SortInput::field(...)` (the key is the
+     *                                               name the client sends; its alias never reaches the API)
+     * @param string[]                   $searchable Fields to apply ILIKE search on
+     * @param array<string, FilterInput> $filterable Allowed filter fields and their definitions
+     * @param bool                       $strict     When true (default), an undeclared sort/filter field, an
+     *                                               unknown operator or a malformed filter is reported instead
+     *                                               of silently ignored
      *
-     * @return PaginatedResultRepository<T>
+     * @return PaginatedResult<T>
      *
      * @throws UndeclaredQueryParameterException when $strict and the query carries rejected parameters
      */
     public function paginate(
         QueryBuilder $qb,
-        FilterQueryRequest $query,
+        ListQueryRequest $query,
         array $sortable = [],
         array $searchable = [],
         int $minSearchLength = 3,
         array $filterable = [],
         bool $strict = true,
-    ): PaginatedResultRepository {
+    ): PaginatedResult {
         $alias = $qb->getRootAliases()[0];
 
         $this->applySearch($qb, $alias, $query->q, $searchable, $minSearchLength);
@@ -116,7 +115,7 @@ trait BaseRepositoryTrait
             ->getQuery()
             ->getResult();
 
-        return new PaginatedResultRepository($data, $total, $query->page, $query->perPage);
+        return new PaginatedResult($data, $total, $query->page, $query->perPage);
     }
 
     /**
@@ -163,12 +162,19 @@ trait BaseRepositoryTrait
     }
 
     /**
-     * @param array<int|string, string|SortInput> $sortable
+     * @param array<string, SortInput> $sortable
      *
      * @return list<QueryParameterRejection>
      */
     private function applySort(QueryBuilder $qb, string $alias, string|null $sort, string $dir, array $sortable): array
     {
+        foreach ($sortable as $key => $entry) {
+            // @phpstan-ignore instanceof.alwaysTrue (the declared type is not enforced at runtime)
+            if (!\is_string($key) || !$entry instanceof SortInput) {
+                throw new \InvalidArgumentException(\sprintf('sortable entries must be \'publicName\' => SortInput::field(...), got "%s".', \is_string($entry) ? $entry : (string) $key));
+            }
+        }
+
         if (null === $sort) {
             return [];
         }
@@ -185,24 +191,13 @@ trait BaseRepositoryTrait
     }
 
     /**
-     * @param array<int|string, string|SortInput> $sortable
+     * @param array<string, SortInput> $sortable
      */
     private function resolveSortPath(string $alias, string $sort, array $sortable): string|null
     {
-        if (($sortable[$sort] ?? null) instanceof SortInput) {
-            $input = $sortable[$sort];
+        $input = $sortable[$sort] ?? null;
 
-            return $input->expression ?? ($input->alias ?? $alias) . '.' . $input->resolveProperty($sort);
-        }
-
-        // Legacy entries: a plain string, matched exactly as the client sends it.
-        foreach ($sortable as $key => $entry) {
-            if (\is_string($entry) && !\is_string($key) && $entry === $sort) {
-                return $this->resolvePath($alias, $sort);
-            }
-        }
-
-        return null;
+        return null === $input ? null : $input->expression ?? ($input->alias ?? $alias) . '.' . $input->resolveProperty($sort);
     }
 
     /**
@@ -226,6 +221,13 @@ trait BaseRepositoryTrait
      */
     private function applyFilters(QueryBuilder $qb, string $alias, array $filters, array $filterable): array
     {
+        foreach ($filterable as $key => $entry) {
+            // @phpstan-ignore instanceof.alwaysTrue (the declared type is not enforced at runtime)
+            if (!$entry instanceof FilterInput) {
+                throw new \InvalidArgumentException(\sprintf('filterable entries must be \'key\' => FilterInput::*(...), got "%s".', $key));
+            }
+        }
+
         $grouped = [];
         $rejections = [];
         foreach ($filters as $criteria) {

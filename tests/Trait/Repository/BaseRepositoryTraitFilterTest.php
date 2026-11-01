@@ -6,11 +6,12 @@ namespace Letkode\OrmToolkitBundle\Tests\Trait\Repository;
 
 use Doctrine\ORM\Query\Expr;
 use Doctrine\ORM\QueryBuilder;
+use Letkode\ListQueryBundle\Filter\FilterCriteria;
+use Letkode\ListQueryBundle\Filter\FilterInput;
+use Letkode\ListQueryBundle\Naming\PropertyCase;
+use Letkode\ListQueryBundle\Naming\PropertyCaseRegistry;
+use Letkode\ListQueryBundle\Sort\SortInput;
 use Letkode\OrmToolkitBundle\Trait\Repository\BaseRepositoryTrait;
-use Letkode\QueryFilterBundle\Filter\FilterCriteria;
-use Letkode\QueryFilterBundle\Filter\FilterInput;
-use Letkode\QueryFilterBundle\Filter\PropertyCase;
-use Letkode\QueryFilterBundle\Filter\PropertyCaseRegistry;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
@@ -26,7 +27,7 @@ final class FilterTestRepository
      * @param list<FilterCriteria>       $filters
      * @param array<string, FilterInput> $filterable
      *
-     * @return list<\Letkode\QueryFilterBundle\Exception\QueryParameterRejection>
+     * @return list<\Letkode\ListQueryBundle\Exception\QueryParameterRejection>
      */
     public function applyFiltersPublic(QueryBuilder $qb, string $alias, array $filters, array $filterable): array
     {
@@ -34,9 +35,9 @@ final class FilterTestRepository
     }
 
     /**
-     * @param string[] $sortable
+     * @param array<string, SortInput> $sortable
      *
-     * @return list<\Letkode\QueryFilterBundle\Exception\QueryParameterRejection>
+     * @return list<\Letkode\ListQueryBundle\Exception\QueryParameterRejection>
      */
     public function applySortPublic(QueryBuilder $qb, string $alias, string|null $sort, string $dir, array $sortable): array
     {
@@ -436,5 +437,16 @@ final class BaseRepositoryTraitFilterTest extends TestCase
 
         self::assertSame([], $params);
         self::assertSame([], $wheres);
+    }
+
+    public function testNonFilterInputFilterableEntryThrows(): void
+    {
+        $qb = $this->createMock(QueryBuilder::class);
+
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('status');
+
+        // @phpstan-ignore argument.type (a legacy/mistaken declaration, rejected at runtime)
+        $this->repo->applyFiltersPublic($qb, 'c', [], ['status' => 'x']);
     }
 }

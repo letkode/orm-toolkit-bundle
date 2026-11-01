@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace Letkode\OrmToolkitBundle\Tests\Trait\Repository;
 
 use Doctrine\ORM\QueryBuilder;
+use Letkode\ListQueryBundle\Naming\PropertyCase;
+use Letkode\ListQueryBundle\Naming\PropertyCaseRegistry;
+use Letkode\ListQueryBundle\Sort\SortInput;
 use Letkode\OrmToolkitBundle\Trait\Repository\BaseRepositoryTrait;
-use Letkode\QueryFilterBundle\Filter\PropertyCase;
-use Letkode\QueryFilterBundle\Filter\PropertyCaseRegistry;
-use Letkode\QueryFilterBundle\Filter\SortInput;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -25,9 +25,10 @@ final class SortSearchTestRepository
         $this->applySearch($qb, $alias, $q, $searchable, $minSearchLength);
     }
 
-    /** @param array<int|string, string|SortInput> $sortable */
+    /** @param array<int|string, mixed> $sortable */
     public function applySortPublic(QueryBuilder $qb, string $alias, string|null $sort, string $dir, array $sortable): void
     {
+        // @phpstan-ignore argument.type (the test passes invalid entries on purpose)
         $this->applySort($qb, $alias, $sort, $dir, $sortable);
     }
 }
@@ -150,49 +151,40 @@ final class BaseRepositoryTraitSortSearchTest extends TestCase
     }
 
     // -------------------------------------------------------------------------
-    // sort — joined alias path
+    // sort — joined alias via SortInput
     // -------------------------------------------------------------------------
 
-    public function testSortOnJoinedAliasUsesGivenPathInsteadOfRootAlias(): void
+    public function testSortOnJoinedAliasUsesTheDeclaredAliasInsteadOfRootAlias(): void
     {
         $orderBys = [];
         $qb = $this->createSortQbMock($orderBys);
 
-        $this->repo->applySortPublic($qb, 'c', 'p.lastName', 'asc', ['p.lastName']);
+        $this->repo->applySortPublic($qb, 'c', 'lastName', 'asc', ['lastName' => SortInput::field(alias: 'p')]);
 
         self::assertCount(1, $orderBys);
         self::assertSame('p.lastName', $orderBys[0]['path']);
         self::assertSame('ASC', $orderBys[0]['dir']);
     }
 
-    // -------------------------------------------------------------------------
-    // sort — backward compatibility (no dot)
-    // -------------------------------------------------------------------------
-
-    public function testSortWithoutDotStillResolvesAgainstRootAlias(): void
+    public function testSortNotInAllowlistIsIgnored(): void
     {
         $orderBys = [];
         $qb = $this->createSortQbMock($orderBys);
 
-        $this->repo->applySortPublic($qb, 'c', 'createdAt', 'desc', ['createdAt']);
-
-        self::assertCount(1, $orderBys);
-        self::assertSame('c.createdAt', $orderBys[0]['path']);
-        self::assertSame('DESC', $orderBys[0]['dir']);
-    }
-
-    // -------------------------------------------------------------------------
-    // sort — allowlist regression: a dotted sort not declared is ignored
-    // -------------------------------------------------------------------------
-
-    public function testSortWithDottedFieldNotInAllowlistIsIgnored(): void
-    {
-        $orderBys = [];
-        $qb = $this->createSortQbMock($orderBys);
-
-        $this->repo->applySortPublic($qb, 'c', 'p.lastName', 'asc', ['createdAt']);
+        $this->repo->applySortPublic($qb, 'c', 'p.lastName', 'asc', ['createdAt' => SortInput::field()]);
 
         self::assertSame([], $orderBys);
+    }
+
+    public function testPlainStringSortableEntryThrows(): void
+    {
+        $orderBys = [];
+        $qb = $this->createSortQbMock($orderBys);
+
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('name');
+
+        $this->repo->applySortPublic($qb, 'c', 'name', 'asc', ['name']);
     }
 
     // -------------------------------------------------------------------------
@@ -272,17 +264,5 @@ final class BaseRepositoryTraitSortSearchTest extends TestCase
         $this->repo->applySortPublic($qb, 'cr', 'c.legalName', 'asc', ['legalName' => SortInput::field(alias: 'c')]);
 
         self::assertSame([], $orderBys);
-    }
-
-    public function testSortInputAndLegacyStringsCanBeMixed(): void
-    {
-        $orderBys = [];
-        $qb = $this->createSortQbMock($orderBys);
-        $sortable = ['createdAt', 'legalName' => SortInput::field(alias: 'c')];
-
-        $this->repo->applySortPublic($qb, 'cr', 'createdAt', 'asc', $sortable);
-        $this->repo->applySortPublic($qb, 'cr', 'legalName', 'asc', $sortable);
-
-        self::assertSame(['cr.createdAt', 'c.legalName'], array_column($orderBys, 'path'));
     }
 }

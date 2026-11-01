@@ -61,36 +61,33 @@ Adds `objectClass` and `objectId` columns to track which object a record belongs
 
 ### `BaseRepositoryTrait`
 
-Query/filter/pagination params are provided by [`letkode/query-filter-bundle`](https://github.com/letkode/query-filter-bundle).
+Query/filter/pagination params are provided by [`letkode/list-query-bundle`](https://github.com/letkode/list-query-bundle).
 
 ```php
-use Letkode\QueryFilterBundle\Request\FilterQueryRequest;
+use Letkode\ListQueryBundle\Request\ListQueryRequest;
+use Letkode\ListQueryBundle\Sort\SortInput;
 
 $repo->save($entity);
 $repo->remove($entity);
 $repo->findByUuid($uuid);           // returns T|null
 $repo->findOrFailByUuid($uuid);     // throws Letkode\HttpExceptionBundle\Exception\EntityNotFoundException (404)
-$repo->paginate($qb, $query, sortable: ['name'], searchable: ['name', 'email']);
-// $query is a Letkode\QueryFilterBundle\Request\FilterQueryRequest
+$repo->paginate($qb, $query, sortable: ['name' => SortInput::field()], searchable: ['name', 'email']);
+// $query is a Letkode\ListQueryBundle\Request\ListQueryRequest
 ```
 
-`sortable` and `searchable` entries may be a qualified alias path (`'p.lastName'`) instead of a bare
-field name, to sort/search on a joined entity:
+`searchable` entries may be a qualified alias path (`'p.lastName'`) instead of a bare field name, to
+search on a joined entity:
 
 ```php
 $qb = $this->createQueryBuilder('c')->join('c.person', 'p');
 
-$repo->paginate(
-    $qb,
-    $query,
-    sortable:   ['createdAt', 'p.lastName'],
-    searchable: ['p.firstName', 'p.lastName', 'p.email'],
-);
+$repo->paginate($qb, $query, searchable: ['p.firstName', 'p.lastName', 'p.email']);
 ```
 
-To sort on a joined entity without making the client send the alias, declare the entry like a
-`filterable` one: the array key is the public name the client sends, and a
-[`SortInput`](https://github.com/letkode/query-filter-bundle) names the alias that owns the field.
+`sortable` is declared like `filterable`: the array key is the public name the client sends, and the
+value is a [`SortInput`](https://github.com/letkode/list-query-bundle) that names the alias that owns
+the field, so the query alias never reaches the API. Every entry must be a `SortInput` (and every
+`filterable` entry a `FilterInput`); anything else throws an `InvalidArgumentException`.
 
 ```php
 $repo->paginate($qb, $query, sortable: [
@@ -100,29 +97,27 @@ $repo->paginate($qb, $query, sortable: [
 ]);
 ```
 
-The property defaults to the key converted to the configured `property_case`. Plain strings
-(`'createdAt'`, `'p.lastName'`) keep working, matched exactly as the client sends them, and can be
-mixed with `SortInput` entries; prefer `SortInput` for joined fields. A `SortInput` is matched by its
-key only: the qualified path (`c.legalName`) is not accepted.
+The property defaults to the key converted to the configured `property_case`. A `SortInput` is
+matched by its key only: the qualified path (`c.legalName`) is not accepted.
 
-A bare field name (no dot) still resolves against the root alias, exactly as before. The referenced
-alias must already be joined on the `QueryBuilder` passed to `paginate()` — the bundle does not
-validate or infer joins, same responsibility as `FilterInput::alias`. Ordering on a path behind a
-to-many join can duplicate rows in the paginated result (the usual Doctrine to-many fan-out); prefer
+A bare `searchable` field name (no dot) resolves against the root alias. The referenced alias must
+already be joined on the `QueryBuilder` passed to `paginate()` — the bundle does not validate or
+infer joins, same responsibility as `FilterInput::alias`. Ordering on a path behind a to-many join
+can duplicate rows in the paginated result (the usual Doctrine to-many fan-out); prefer
 sorting/searching on a to-one relation, or on a column of the root entity, when possible.
 
 #### Strict mode
 
 `paginate()` validates the request against the declared allowlists before touching the database.
 By default (`strict: true`) an undeclared sort field, an undeclared filter field, an unknown filter
-operator or a malformed filter entry throws `Letkode\QueryFilterBundle\Exception\UndeclaredQueryParameterException`,
+operator or a malformed filter entry throws `Letkode\ListQueryBundle\Exception\UndeclaredQueryParameterException`,
 which carries the full list of rejections (`->rejections`) so the caller can report them all at once
 and it is an HTTP status exception (`422`, with the errors by parameter), so the `ExceptionListener` of
 `letkode/http-exception-bundle` renders it without any extra code. A `q` shorter than
 `minSearchLength` is not a rejection — search is simply not applied.
 
 ```php
-$repo->paginate($qb, $query, sortable: ['name'], strict: false); // legacy: silently ignore
+$repo->paginate($qb, $query, sortable: ['name' => SortInput::field()], strict: false); // silently ignore rejections
 ```
 
 ### `TranslatableRepositoryTrait`
@@ -168,7 +163,7 @@ Useful for ordering and filtering on translated values stored in a jsonb `transl
 - `doctrine/doctrine-bundle` `^3.0`
 - `gedmo/doctrine-extensions` `^3.0`
 - `letkode/http-exception-bundle` `^1.2`
-- `letkode/query-filter-bundle` `^1.6`
+- `letkode/list-query-bundle` `^1.0`
 
 ---
 
@@ -181,7 +176,7 @@ MIT — see [LICENSE](LICENSE).
 A filter's target is built as `alias.property`: the input's `alias` (the root alias when omitted) and
 its `property` (the key converted to your entity properties' spelling when omitted). The
 `property_case` option and the per-input `propertyCase` argument belong to
-`letkode/query-filter-bundle` (`letkode_query_filter.property_case`); see its README.
+`letkode/list-query-bundle` (`letkode_list_query.property_case`); see its README.
 `'legal_name' => FilterInput::text()` then filters on `<root>.legalName`,
 `FilterInput::text(alias: 'c')` on `c.legalName`, and `FilterInput::text(expression: "CONCAT(u.firstName, ' ', u.lastName)")`
 filters on that DQL expression as-is.

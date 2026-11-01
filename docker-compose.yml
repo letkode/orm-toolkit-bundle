@@ -11,6 +11,6 @@ services:
         command: sleep infinity
         volumes:
             - ./:/app/www
-            - ../query-filter-bundle:/app/query-filter-bundle
+            - ../list-query-bundle:/app/list-query-bundle
             - ./docker/php/xdebug.ini:/usr/local/etc/php/conf.d/xdebug.ini
             - ./docker/php/php.ini:/usr/local/etc/php/php.ini

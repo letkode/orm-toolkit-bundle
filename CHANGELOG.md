@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [3.0.0] - 2026-11-01
+
+### Changed
+- **Breaking:** requires `letkode/list-query-bundle` `^1.0` instead of `letkode/query-filter-bundle`, its successor (same behavior, new names; the old-to-new table is in its CHANGELOG). `paginate()` now takes `Letkode\ListQueryBundle\Request\ListQueryRequest` (was `FilterQueryRequest`) and returns `Letkode\ListQueryBundle\Result\PaginatedResult` (was `PaginatedResultRepository`). `SortInput` is `Letkode\ListQueryBundle\Sort\SortInput`; `PropertyCase` and `PropertyCaseRegistry` live in `Letkode\ListQueryBundle\Naming\`. Move `config/packages/letkode_query_filter.yaml` to `letkode_list_query.yaml` (`letkode_list_query.property_case`) and publish it with `bin/console letkode:config:publish list-query`; the translation domain is now `list_query`.
+- A `filterable` entry that is not a `FilterInput` now throws an `InvalidArgumentException` naming the key, instead of a PHP `TypeError`.
+
+### Removed
+- **Breaking:** plain-string `sortable` entries (deprecated in 2.7.0), such as `['createdAt', 'p.lastName']`. Every entry is now `'publicName' => SortInput::field(...)`; `'p.lastName'` becomes `'lastName' => SortInput::field(alias: 'p')`. A string entry throws an `InvalidArgumentException`. `searchable` is unchanged and still accepts alias-qualified paths.
+
+---
+
 ## [2.7.0] - 2026-11-01
 
 ### Added

@@ -7,13 +7,14 @@ namespace Letkode\OrmToolkitBundle\Tests\Trait\Repository;
 use Doctrine\ORM\Query\Expr;
 use Doctrine\ORM\Query\Expr\OrderBy;
 use Doctrine\ORM\QueryBuilder;
+use Letkode\ListQueryBundle\Exception\QueryParameterRejection;
+use Letkode\ListQueryBundle\Exception\RejectionReason;
+use Letkode\ListQueryBundle\Exception\UndeclaredQueryParameterException;
+use Letkode\ListQueryBundle\Filter\FilterCriteria;
+use Letkode\ListQueryBundle\Filter\FilterInput;
+use Letkode\ListQueryBundle\Request\ListQueryRequest;
+use Letkode\ListQueryBundle\Sort\SortInput;
 use Letkode\OrmToolkitBundle\Trait\Repository\BaseRepositoryTrait;
-use Letkode\QueryFilterBundle\Exception\QueryParameterRejection;
-use Letkode\QueryFilterBundle\Exception\RejectionReason;
-use Letkode\QueryFilterBundle\Exception\UndeclaredQueryParameterException;
-use Letkode\QueryFilterBundle\Filter\FilterCriteria;
-use Letkode\QueryFilterBundle\Filter\FilterInput;
-use Letkode\QueryFilterBundle\Request\FilterQueryRequest;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -36,7 +37,7 @@ final class StrictTestRepository
     }
 
     /**
-     * @param string[] $sortable
+     * @param array<string, SortInput> $sortable
      *
      * @return list<QueryParameterRejection>
      */
@@ -83,7 +84,7 @@ final class BaseRepositoryTraitStrictTest extends TestCase
     public function testApplySortRejectsUndeclaredField(): void
     {
         $wheres = [];
-        $rejections = $this->repo->applySortPublic($this->qb($wheres), 'u', 'inventado', 'asc', ['name', 'createdAt']);
+        $rejections = $this->repo->applySortPublic($this->qb($wheres), 'u', 'inventado', 'asc', ['name' => SortInput::field(), 'createdAt' => SortInput::field()]);
 
         self::assertCount(1, $rejections);
         self::assertSame('sort', $rejections[0]->parameter);
@@ -94,13 +95,13 @@ final class BaseRepositoryTraitStrictTest extends TestCase
     public function testApplySortWithNullSortReturnsNoRejections(): void
     {
         $wheres = [];
-        self::assertSame([], $this->repo->applySortPublic($this->qb($wheres), 'u', null, 'asc', ['name']));
+        self::assertSame([], $this->repo->applySortPublic($this->qb($wheres), 'u', null, 'asc', ['name' => SortInput::field()]));
     }
 
     public function testApplySortWithDeclaredFieldReturnsNoRejections(): void
     {
         $wheres = [];
-        self::assertSame([], $this->repo->applySortPublic($this->qb($wheres), 'u', 'name', 'asc', ['name']));
+        self::assertSame([], $this->repo->applySortPublic($this->qb($wheres), 'u', 'name', 'asc', ['name' => SortInput::field()]));
     }
 
     // -------------------------------------------------------------------------
@@ -178,13 +179,13 @@ final class BaseRepositoryTraitStrictTest extends TestCase
 
     public function testPaginateStrictThrowsBeforeExecutingAnyQuery(): void
     {
-        $query = new FilterQueryRequest(
+        $query = new ListQueryRequest(
             sort: 'inventado',
             filters: [new FilterCriteria('etapa', 'is', ['x'])],
         );
 
         try {
-            $this->repo->paginate($this->paginateQb(), $query, sortable: ['name'], filterable: ['estado' => FilterInput::text()]);
+            $this->repo->paginate($this->paginateQb(), $query, sortable: ['name' => SortInput::field()], filterable: ['estado' => FilterInput::text()]);
             self::fail('expected UndeclaredQueryParameterException');
         } catch (UndeclaredQueryParameterException $e) {
             $params = array_map(static fn (QueryParameterRejection $r): string => $r->parameter, $e->rejections);
@@ -195,7 +196,7 @@ final class BaseRepositoryTraitStrictTest extends TestCase
 
     public function testPaginateNonStrictSkipsRejectionsAndReachesQuery(): void
     {
-        $query = new FilterQueryRequest(
+        $query = new ListQueryRequest(
             sort: 'inventado',
             filters: [new FilterCriteria('etapa', 'is', ['x'])],
         );
@@ -206,7 +207,7 @@ final class BaseRepositoryTraitStrictTest extends TestCase
         $this->repo->paginate(
             $this->paginateQb(),
             $query,
-            sortable: ['name'],
+            sortable: ['name' => SortInput::field()],
             filterable: ['estado' => FilterInput::text()],
             strict: false,
         );
@@ -214,13 +215,13 @@ final class BaseRepositoryTraitStrictTest extends TestCase
 
     public function testPaginateStrictPassesWhenEverythingIsDeclared(): void
     {
-        $query = new FilterQueryRequest(sort: 'name', filters: [new FilterCriteria('estado', 'is', ['x'])]);
+        $query = new ListQueryRequest(sort: 'name', filters: [new FilterCriteria('estado', 'is', ['x'])]);
 
         $this->expectException(QueryExecuted::class);
         $this->repo->paginate(
             $this->paginateQb(),
             $query,
-            sortable: ['name'],
+            sortable: ['name' => SortInput::field()],
             filterable: ['estado' => FilterInput::text()],
         );
     }
