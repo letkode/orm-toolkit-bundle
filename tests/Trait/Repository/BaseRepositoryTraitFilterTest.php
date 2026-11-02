@@ -449,4 +449,15 @@ final class BaseRepositoryTraitFilterTest extends TestCase
         // @phpstan-ignore argument.type (a legacy/mistaken declaration, rejected at runtime)
         $this->repo->applyFiltersPublic($qb, 'c', [], ['status' => 'x']);
     }
+
+    public function testFilterableEntryWithoutAStringKeyThrows(): void
+    {
+        $qb = $this->createMock(QueryBuilder::class);
+
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('FilterInput');
+
+        // @phpstan-ignore argument.type (a list instead of a map, rejected at runtime)
+        $this->repo->applyFiltersPublic($qb, 'c', [], [FilterInput::text()]);
+    }
 }

@@ -223,7 +223,7 @@ trait BaseRepositoryTrait
     {
         foreach ($filterable as $key => $entry) {
             // @phpstan-ignore instanceof.alwaysTrue (the declared type is not enforced at runtime)
-            if (!$entry instanceof FilterInput) {
+            if (!\is_string($key) || !$entry instanceof FilterInput) {
                 throw new \InvalidArgumentException(\sprintf('filterable entries must be \'key\' => FilterInput::*(...), got "%s".', $key));
             }
         }
